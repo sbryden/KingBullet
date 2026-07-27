@@ -1,0 +1,48 @@
+export const WEAPONS = {
+  // Primaries
+  ruger: {
+    name: 'Ruger Mark IV', type: 'primary', caliber: '.22 LR',
+    damage: 25, fireRate: 0.1, accuracy: 0.95, magSize: 10, reserve: 50,
+    reloadTime: 1.5, recoil: 0.005, auto: true
+  },
+  mp5: {
+    name: 'MP5', type: 'primary', caliber: '9×19mm',
+    damage: 28, fireRate: 0.05, accuracy: 0.9, magSize: 30, reserve: 120,
+    reloadTime: 1.8, recoil: 0.012, auto: true
+  },
+  sniper: {
+    name: 'Sniper', type: 'primary', caliber: '.338 Lapua',
+    damage: 150, fireRate: 1.0, accuracy: 0.98, magSize: 5, reserve: 30,
+    reloadTime: 3.0, recoil: 0.06, auto: false
+  },
+  machinegun: {
+    name: 'Machine Gun', type: 'primary', caliber: '5.56×45mm',
+    damage: 22, fireRate: 0.04, accuracy: 0.6, magSize: 100, reserve: 200,
+    reloadTime: 4.5, recoil: 0.015, auto: true, noSecondary: true
+  },
+  // Secondaries
+  pistol: {
+    name: 'Pistol', type: 'secondary', caliber: '9mm',
+    damage: 35, fireRate: 0.167, accuracy: 0.88, magSize: 12, reserve: 48,
+    reloadTime: 1.2, recoil: 0.018, auto: false
+  },
+  grenade: {
+    name: 'Grenade', type: 'secondary', caliber: 'Frag',
+    damage: 200, fireRate: 2.0, accuracy: 1, magSize: 1, reserve: 3,
+    reloadTime: 0, recoil: 0, auto: false, isGrenade: true
+  },
+  tecdc9: {
+    name: 'Tec-DC9', type: 'secondary', caliber: '9mm',
+    damage: 20, fireRate: 0.055, accuracy: 0.55, magSize: 32, reserve: 96,
+    reloadTime: 2.0, recoil: 0.02, auto: true
+  },
+  // Melee
+  knife: {
+    name: 'Knife', type: 'melee', caliber: '',
+    damage: 80, fireRate: 0.3, range: 2.5, auto: false
+  },
+  bayonet: {
+    name: 'Bayonet', type: 'melee', caliber: '',
+    damage: 100, fireRate: 0.6, range: 3.5, auto: false
+  }
+};

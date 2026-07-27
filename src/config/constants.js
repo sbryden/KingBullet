@@ -1,0 +1,10 @@
+export const ARENA_SIZE = 120;
+export const PLAYER_HEIGHT = 1.7;
+export const WALK_SPEED = 8;
+export const SPRINT_SPEED = 14;
+export const JUMP_FORCE = 7;
+export const GRAVITY = -20;
+export const MOUSE_SENS = 0.002;
+export const NUM_STATIC_TARGETS = 12;
+export const NUM_MOVING_TARGETS = 6;
+export const TARGET_RESPAWN_TIME = 3;
