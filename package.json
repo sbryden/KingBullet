@@ -4,16 +4,26 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run dev\"",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "node server/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "three": "^0.185.1",
     "vite": "^8.1.5"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.4",
+    "puppeteer": "^25.3.0"
   }
 }

@@ -4,14 +4,18 @@ export const Renderer = {
   scene: null,
   camera: null,
   renderer: null,
+  
+  shakeIntensity: 0,
+  shakeDuration: 0,
+  _baseRotation: new THREE.Euler(0, 0, 0, 'YXZ'),
 
   init() {
     const canvas = document.getElementById('game-canvas');
-    this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 2.0;
 
@@ -20,6 +24,7 @@ export const Renderer = {
     this.scene.fog = new THREE.Fog(0x1a1a2e, 60, 150);
 
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+    this.scene.add(this.camera);
 
     window.addEventListener('resize', this.onResize.bind(this));
 
@@ -61,6 +66,26 @@ export const Renderer = {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+  },
+
+  shake(intensity = 0.05, duration = 0.2) {
+    this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
+    this.shakeDuration = Math.max(this.shakeDuration, duration);
+  },
+
+  update(delta) {
+    if (this.shakeDuration > 0) {
+      this.shakeDuration -= delta;
+      
+      const shakeAmt = this.shakeIntensity * (this.shakeDuration > 0 ? 1 : 0);
+      this.camera.position.x += (Math.random() - 0.5) * shakeAmt;
+      this.camera.position.y += (Math.random() - 0.5) * shakeAmt;
+      this.camera.position.z += (Math.random() - 0.5) * shakeAmt;
+      
+      this.camera.rotation.z += (Math.random() - 0.5) * shakeAmt * 0.2;
+      
+      this.shakeIntensity *= 0.9;
+    }
   },
 
   render() {

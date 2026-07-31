@@ -1,4 +1,4 @@
-export const ARENA_SIZE = 120;
+export const ARENA_SIZE = 500;
 export const PLAYER_HEIGHT = 1.7;
 export const WALK_SPEED = 8;
 export const SPRINT_SPEED = 14;

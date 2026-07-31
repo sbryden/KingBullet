@@ -7,7 +7,20 @@ export const ViewModelFactory = {
     const viewModel = new THREE.Group();
 
     // Common materials
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xd4a574, roughness: 0.7, metalness: 0.05 });
+    const outfit = GameState.playerOutfit;
+    const skinMat = new THREE.MeshStandardMaterial({ color: outfit.skin, roughness: 0.7, metalness: 0.05 });
+    const shirtMat = new THREE.MeshStandardMaterial({ color: outfit.shirt, roughness: 0.7, metalness: 0.2 });
+    const gloveMat = outfit.gloves ? new THREE.MeshStandardMaterial({ color: outfit.gloves, roughness: 0.9, metalness: 0.1 }) : skinMat;
+    
+    // Apply camo if exists
+    if (outfit.camo) {
+      import('./OutfitFactory.js').then(module => {
+        const tex = module.OutfitFactory.createCamoTexture(outfit.camo, outfit.scale);
+        shirtMat.map = tex;
+        shirtMat.needsUpdate = true;
+      });
+    }
+
     const silverMat = new THREE.MeshStandardMaterial({ color: 0xb8b8c0, roughness: 0.25, metalness: 0.85 });
     const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.35, metalness: 0.7 });
     const gripMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.85, metalness: 0.1 });
@@ -16,55 +29,86 @@ export const ViewModelFactory = {
 
     const weaponId = GameState.activeWeaponId();
     const w = WEAPONS[weaponId];
+    if (!w) {
+      camera.add(viewModel);
+      return viewModel;
+    }
+    const sleeves = outfit.sleeves || 'long';
 
     if (GameState.currentSlot === 'melee') {
-      this.buildMeleeModel(viewModel, weaponId, skinMat, silverMat, darkMetalMat, gripMat);
+      this.buildMeleeModel(viewModel, weaponId, skinMat, shirtMat, gloveMat, sleeves, silverMat, darkMetalMat, gripMat);
     } else if (w.isGrenade) {
-      this.buildGrenadeModel(viewModel, skinMat, oliveMat, darkMetalMat);
+      this.buildGrenadeModel(viewModel, skinMat, shirtMat, gloveMat, sleeves, oliveMat, darkMetalMat);
     } else {
-      this.buildGunModel(viewModel, weaponId, skinMat, silverMat, darkMetalMat, gripMat, woodMat);
+      this.buildGunModel(viewModel, weaponId, skinMat, shirtMat, gloveMat, sleeves, silverMat, darkMetalMat, gripMat, woodMat);
     }
 
     camera.add(viewModel);
     return viewModel;
   },
 
-  buildGunModel(vm, weaponId, skinMat, silverMat, darkMetalMat, gripMat, woodMat) {
+  buildGunModel(vm, weaponId, skinMat, shirtMat, gloveMat, sleeves, silverMat, darkMetalMat, gripMat, woodMat) {
     const gunGroup = new THREE.Group();
     const loadout = GameState.loadout;
 
-    if (weaponId === 'ruger') {
-      const receiver = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.35, 12), darkMetalMat);
-      receiver.rotation.x = Math.PI/2;
-      receiver.position.set(0, 0.0, -0.2);
+    if (weaponId === 'ak47') {
+      const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.35), darkMetalMat);
       gunGroup.add(receiver);
       
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.03, 0.12), darkMetalMat);
-      frame.position.set(0, -0.02, 0.02);
-      gunGroup.add(frame);
-      
-      const pistolGrip = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.1, 0.04), gripMat);
-      pistolGrip.position.set(0, -0.07, 0.05);
-      pistolGrip.rotation.x = 0.35;
+      const dustCover = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 8), darkMetalMat);
+      dustCover.rotation.x = Math.PI / 2;
+      dustCover.position.set(0, 0.03, 0);
+      gunGroup.add(dustCover);
+
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3), darkMetalMat);
+      barrel.rotation.x = Math.PI / 2;
+      barrel.position.set(0, 0.01, -0.32);
+      gunGroup.add(barrel);
+
+      const gasTube = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.15), darkMetalMat);
+      gasTube.rotation.x = Math.PI / 2;
+      gasTube.position.set(0, 0.035, -0.25);
+      gunGroup.add(gasTube);
+
+      const handguard = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.05, 0.15), woodMat);
+      handguard.position.set(0, 0.01, -0.25);
+      gunGroup.add(handguard);
+
+      // Curved magazine
+      const magGroup = new THREE.Group();
+      const mag1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.1, 0.06), darkMetalMat);
+      mag1.position.set(0, -0.06, -0.04);
+      mag1.rotation.x = 0.2;
+      magGroup.add(mag1);
+      const mag2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.08, 0.06), darkMetalMat);
+      mag2.position.set(0, -0.14, -0.01);
+      mag2.rotation.x = 0.5;
+      magGroup.add(mag2);
+      gunGroup.add(magGroup);
+
+      const pistolGrip = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.1, 0.04), woodMat);
+      pistolGrip.position.set(0, -0.07, 0.12);
+      pistolGrip.rotation.x = 0.2;
       gunGroup.add(pistolGrip);
-      
-      const triggerGuard = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.005, 0.04), darkMetalMat);
-      triggerGuard.position.set(0, -0.04, 0.01);
-      gunGroup.add(triggerGuard);
-      
-      const fs = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.015, 0.006), darkMetalMat);
-      fs.position.set(0, 0.02, -0.35);
-      gunGroup.add(fs);
-      
-      const rs = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.012, 0.01), darkMetalMat);
-      rs.position.set(0, 0.02, -0.05);
-      gunGroup.add(rs);
+
+      const stock = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.06, 0.22), woodMat);
+      stock.position.set(0, -0.02, 0.28);
+      stock.rotation.x = 0.1;
+      gunGroup.add(stock);
+
+      const frontSight = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.03, 0.01), darkMetalMat);
+      frontSight.position.set(0, 0.04, -0.42);
+      gunGroup.add(frontSight);
+
+      const rearSight = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.015, 0.01), darkMetalMat);
+      rearSight.position.set(0, 0.05, -0.1);
+      gunGroup.add(rearSight);
 
       if (loadout.melee === 'bayonet') {
         const blade = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.015, 0.14), silverMat);
-        blade.position.set(0, -0.015, -0.45); gunGroup.add(blade);
+        blade.position.set(0, -0.015, -0.55); gunGroup.add(blade);
       }
-      gunGroup.position.set(0.08, -0.12, -0.25);
+      gunGroup.position.set(0.12, -0.15, -0.3);
 
     } else if (weaponId === 'mp5') {
       const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.065, 0.42), silverMat);
@@ -136,35 +180,61 @@ export const ViewModelFactory = {
       gunGroup.position.set(0.12, -0.15, -0.3);
 
     } else if (weaponId === 'machinegun') {
-      const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.5), darkMetalMat);
+      const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.45), darkMetalMat);
       gunGroup.add(receiver);
-      const topRail = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.015, 0.4), darkMetalMat);
-      topRail.position.set(0, 0.042, -0.02); gunGroup.add(topRail);
-      const handle1 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.035, 0.01), darkMetalMat);
-      handle1.position.set(0, 0.06, -0.05); gunGroup.add(handle1);
-      const handle2 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.035, 0.01), darkMetalMat);
-      handle2.position.set(0, 0.06, 0.05); gunGroup.add(handle2);
-      const handleTop = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.01, 0.12), darkMetalMat);
-      handleTop.position.set(0, 0.08, 0.0); gunGroup.add(handleTop);
-      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.35, 8), darkMetalMat);
-      barrel.rotation.x = Math.PI/2; barrel.position.set(0, 0.005, -0.42); gunGroup.add(barrel);
-      const shroud = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.25, 8), darkMetalMat);
-      shroud.rotation.x = Math.PI/2; shroud.position.set(0, 0.005, -0.32);
-      shroud.material = new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.35, metalness: 0.7, wireframe: false });
-      gunGroup.add(shroud);
-      const boxMag = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 0.08), new THREE.MeshStandardMaterial({ color: 0x3a3a20, roughness: 0.6, metalness: 0.3 }));
-      boxMag.position.set(0, -0.1, -0.02); gunGroup.add(boxMag);
-      const pistolGrip = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.1, 0.04), gripMat);
-      pistolGrip.position.set(0, -0.08, 0.15); pistolGrip.rotation.x = 0.25; gunGroup.add(pistolGrip);
-      const stock = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.18), darkMetalMat);
-      stock.position.set(0, 0.0, 0.34); gunGroup.add(stock);
-      const buttpad = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.08, 0.015), gripMat);
-      buttpad.position.set(0, -0.005, 0.43); gunGroup.add(buttpad);
+      
+      // Large Top Handle
+      const handleBase1 = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.08, 0.02), darkMetalMat);
+      handleBase1.position.set(0, 0.08, -0.08); gunGroup.add(handleBase1);
+      const handleBase2 = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.08, 0.02), darkMetalMat);
+      handleBase2.position.set(0, 0.08, 0.08); gunGroup.add(handleBase2);
+      const handleTop = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.02, 0.3), darkMetalMat);
+      handleTop.position.set(0, 0.11, 0.0); gunGroup.add(handleTop);
+
+      // Back Chainsaw Grip
+      const backGripMount = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.04), darkMetalMat);
+      backGripMount.position.set(0, 0.0, 0.24); gunGroup.add(backGripMount);
+      const backGrip = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.16, 8), gripMat);
+      backGrip.rotation.z = Math.PI/2; 
+      backGrip.position.set(0, -0.04, 0.26); 
+      gunGroup.add(backGrip);
+      
+      // Barrel
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.4, 8), darkMetalMat);
+      barrel.rotation.x = Math.PI/2; barrel.position.set(0, 0.0, -0.42); gunGroup.add(barrel);
+      
+      const muzzleBrake = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.025, 0.08, 8), darkMetalMat);
+      muzzleBrake.rotation.x = Math.PI/2; muzzleBrake.position.set(0, 0.0, -0.65); gunGroup.add(muzzleBrake);
+
+      // Large Ammo Box on the side
+      const ammoBoxMat = new THREE.MeshStandardMaterial({ color: 0x2f3e2f, roughness: 0.8, metalness: 0.1 });
+      const ammoBox = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 0.18), ammoBoxMat);
+      ammoBox.position.set(-0.1, -0.05, 0.0); gunGroup.add(ammoBox);
+      
+      // Large Chain
+      const chainGroup = new THREE.Group();
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.3, metalness: 0.8 });
+      for (let i = 0; i < 15; i++) {
+        const link = new THREE.Group();
+        const bullet = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.05, 8), goldMat);
+        bullet.rotation.x = Math.PI/2;
+        link.add(bullet);
+        const casing = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, 0.052), darkMetalMat);
+        link.add(casing);
+        
+        const t = i / 14;
+        link.position.set(-0.15 + t * 0.15, 0.06 + Math.sin(t * Math.PI) * 0.08, -0.02);
+        link.rotation.z = -0.3 + t * 0.5;
+        chainGroup.add(link);
+      }
+      gunGroup.add(chainGroup);
+
       if (loadout.melee === 'bayonet') {
         const blade = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.015, 0.14), silverMat);
-        blade.position.set(0, -0.015, -0.66); gunGroup.add(blade);
+        blade.position.set(0, -0.03, -0.75); gunGroup.add(blade);
       }
-      gunGroup.position.set(0.14, -0.17, -0.35);
+      // Positioned lower for hip fire / top handle hold
+      gunGroup.position.set(0.12, -0.25, -0.25);
 
     } else if (weaponId === 'pistol') {
       const slide = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.04, 0.2), darkMetalMat);
@@ -206,35 +276,61 @@ export const ViewModelFactory = {
     vm.add(gunGroup);
 
     // Arms
-    const rightArmGroup = new THREE.Group();
-    const rSleeve = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.28), skinMat);
-    rSleeve.position.set(0.20, -0.26, -0.08); rSleeve.rotation.set(0.15, -0.3, 0.3);
-    rightArmGroup.add(rSleeve);
-    const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.045, 0.08), skinMat);
-    rHand.position.set(0.12, -0.22, -0.22); rHand.rotation.set(0.25, 0, 0.05);
-    rightArmGroup.add(rHand);
-    const rFingers = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.035, 0.05), skinMat);
-    rFingers.position.set(0.12, -0.25, -0.23); rFingers.rotation.set(0.3, 0, 0);
-    rightArmGroup.add(rFingers);
-    vm.add(rightArmGroup);
+    const lowerArmMat = sleeves === 'short' ? skinMat : shirtMat;
 
+    const rightArmGroup = new THREE.Group();
     const leftArmGroup = new THREE.Group();
-    const lUpperArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.27), skinMat);
-    lUpperArm.position.set(-0.12, -0.32, -0.15); lUpperArm.rotation.set(0.4, -0.5, 0.45);
-    leftArmGroup.add(lUpperArm);
-    const lForearm = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.065, 0.24), skinMat);
-    lForearm.position.set(0.0, -0.22, -0.28); lForearm.rotation.set(0.15, -0.35, 0.2);
-    leftArmGroup.add(lForearm);
-    const lHand = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.05, 0.07), skinMat);
-    lHand.position.set(0.1, -0.16, -0.37); lHand.rotation.set(0.05, 0, -0.05);
-    leftArmGroup.add(lHand);
-    const lFingers = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.03, 0.06), skinMat);
-    lFingers.position.set(0.1, -0.2, -0.37); lFingers.rotation.set(0.2, 0, 0);
-    leftArmGroup.add(lFingers);
-    vm.add(leftArmGroup);
+
+    if (weaponId === 'machinegun') {
+      // Custom arms for heavy machine gun (held from top and back handles)
+      const rSleeve = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.28), lowerArmMat);
+      rSleeve.position.set(0.24, -0.28, -0.05); rSleeve.rotation.set(0.2, -0.2, 0.2);
+      rightArmGroup.add(rSleeve);
+      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.045, 0.08), gloveMat);
+      rHand.position.set(0.12, -0.29, 0.01); rHand.rotation.set(0.0, 0, 0.0);
+      rightArmGroup.add(rHand);
+      vm.add(rightArmGroup);
+
+      const lUpperArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.27), shirtMat);
+      lUpperArm.position.set(-0.1, -0.3, -0.05); lUpperArm.rotation.set(0.5, -0.3, 0.3);
+      leftArmGroup.add(lUpperArm);
+      const lForearm = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.065, 0.24), lowerArmMat);
+      lForearm.position.set(0.0, -0.15, -0.15); lForearm.rotation.set(0.0, -0.5, 0.0);
+      leftArmGroup.add(lForearm);
+      const lHand = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.05, 0.07), gloveMat);
+      lHand.position.set(0.12, -0.12, -0.25); lHand.rotation.set(0.0, 0, 0.0);
+      leftArmGroup.add(lHand);
+      vm.add(leftArmGroup);
+    } else {
+      // Default arms for other guns
+      const rSleeve = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.28), lowerArmMat);
+      rSleeve.position.set(0.20, -0.26, -0.08); rSleeve.rotation.set(0.15, -0.3, 0.3);
+      rightArmGroup.add(rSleeve);
+      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.045, 0.08), gloveMat);
+      rHand.position.set(0.12, -0.22, -0.22); rHand.rotation.set(0.25, 0, 0.05);
+      rightArmGroup.add(rHand);
+      const rFingers = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.035, 0.05), gloveMat);
+      rFingers.position.set(0.12, -0.25, -0.23); rFingers.rotation.set(0.3, 0, 0);
+      rightArmGroup.add(rFingers);
+      vm.add(rightArmGroup);
+
+      const lUpperArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.27), shirtMat);
+      lUpperArm.position.set(-0.12, -0.32, -0.15); lUpperArm.rotation.set(0.4, -0.5, 0.45);
+      leftArmGroup.add(lUpperArm);
+      const lForearm = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.065, 0.24), lowerArmMat);
+      lForearm.position.set(0.0, -0.22, -0.28); lForearm.rotation.set(0.15, -0.35, 0.2);
+      leftArmGroup.add(lForearm);
+      const lHand = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.05, 0.07), gloveMat);
+      lHand.position.set(0.1, -0.16, -0.37); lHand.rotation.set(0.05, 0, -0.05);
+      leftArmGroup.add(lHand);
+      const lFingers = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.03, 0.06), gloveMat);
+      lFingers.position.set(0.1, -0.2, -0.37); lFingers.rotation.set(0.2, 0, 0);
+      leftArmGroup.add(lFingers);
+      vm.add(leftArmGroup);
+    }
   },
 
-  buildMeleeModel(vm, weaponId, skinMat, silverMat, darkMetalMat, gripMat) {
+  buildMeleeModel(vm, weaponId, skinMat, shirtMat, gloveMat, sleeves, silverMat, darkMetalMat, gripMat) {
     const meleeGroup = new THREE.Group();
     if (weaponId === 'knife') {
       const blade = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.008, 0.22), silverMat);
@@ -263,15 +359,17 @@ export const ViewModelFactory = {
     meleeGroup.rotation.set(-0.3, 0, 0.2);
     vm.add(meleeGroup);
 
-    const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.045, 0.08), skinMat);
+    const lowerArmMat = sleeves === 'short' ? skinMat : shirtMat;
+
+    const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.045, 0.08), gloveMat);
     rHand.position.set(0.15, -0.16, -0.2); rHand.rotation.set(-0.2, 0, 0.15);
     vm.add(rHand);
-    const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.28), skinMat);
+    const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.28), lowerArmMat);
     rArm.position.set(0.20, -0.24, -0.06); rArm.rotation.set(0.1, -0.25, 0.3);
     vm.add(rArm);
   },
 
-  buildGrenadeModel(vm, skinMat, oliveMat, darkMetalMat) {
+  buildGrenadeModel(vm, skinMat, shirtMat, gloveMat, sleeves, oliveMat, darkMetalMat) {
     const grenadeGroup = new THREE.Group();
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.08, 8), oliveMat);
     grenadeGroup.add(body);
@@ -284,13 +382,15 @@ export const ViewModelFactory = {
     grenadeGroup.position.set(0.1, -0.12, -0.3);
     vm.add(grenadeGroup);
 
-    const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.07), skinMat);
+    const lowerArmMat = sleeves === 'short' ? skinMat : shirtMat;
+
+    const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.07), gloveMat);
     rHand.position.set(0.1, -0.15, -0.28); rHand.rotation.set(0.1, 0, 0.1);
     vm.add(rHand);
-    const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.28), skinMat);
+    const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.28), lowerArmMat);
     rArm.position.set(0.18, -0.24, -0.1); rArm.rotation.set(0.15, -0.25, 0.3);
     vm.add(rArm);
-    const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.27), skinMat);
+    const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.27), lowerArmMat);
     lArm.position.set(-0.14, -0.3, -0.1); lArm.rotation.set(0.3, -0.4, 0.4);
     vm.add(lArm);
   }

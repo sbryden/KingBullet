@@ -1,9 +1,9 @@
 export const WEAPONS = {
   // Primaries
-  ruger: {
-    name: 'Ruger Mark IV', type: 'primary', caliber: '.22 LR',
-    damage: 25, fireRate: 0.1, accuracy: 0.95, magSize: 10, reserve: 50,
-    reloadTime: 1.5, recoil: 0.005, auto: true
+  ak47: {
+    name: 'AK-47', type: 'primary', caliber: '7.62×39mm',
+    damage: 34, fireRate: 0.1, accuracy: 0.85, magSize: 30, reserve: 90,
+    reloadTime: 2.2, recoil: 0.025, auto: true
   },
   mp5: {
     name: 'MP5', type: 'primary', caliber: '9×19mm',
@@ -29,7 +29,7 @@ export const WEAPONS = {
   grenade: {
     name: 'Grenade', type: 'secondary', caliber: 'Frag',
     damage: 200, fireRate: 2.0, accuracy: 1, magSize: 1, reserve: 3,
-    reloadTime: 0, recoil: 0, auto: false, isGrenade: true
+    reloadTime: 0, recoil: 0, auto: false, isGrenade: true, range: 8
   },
   tecdc9: {
     name: 'Tec-DC9', type: 'secondary', caliber: '9mm',

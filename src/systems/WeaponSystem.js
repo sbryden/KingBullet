@@ -4,6 +4,8 @@ import { GameState } from '../core/GameState.js';
 import { TargetManager } from './TargetManager.js';
 import { ViewModelFactory } from './ViewModelFactory.js';
 import { ARENA_SIZE } from '../config/constants.js';
+import { SoundManager } from '../core/SoundManager.js';
+import { ParticleSystem } from './ParticleSystem.js';
 
 export const WeaponSystem = {
   viewModel: null,
@@ -15,6 +17,7 @@ export const WeaponSystem = {
   isSwitching: false,
   switchTimer: 0,
   SWITCH_TIME: 0.3,
+  isScoped: false,
   grenadeProjectiles: [],
   raycaster: new THREE.Raycaster(),
 
@@ -120,6 +123,11 @@ export const WeaponSystem = {
     this.fireCooldown = w.fireRate;
     this.updateAmmoDisplay();
     
+    // Play sound and shake camera
+    const isHeavy = w.name === 'Shotgun' || w.name === 'Sniper' || w.name === 'Rocket Launcher';
+    SoundManager.playShoot(isHeavy ? 0.7 : 1.0 + (Math.random() * 0.2 - 0.1), isHeavy);
+    Renderer.shake(w.recoil * 0.8 || 0.1, 0.15);
+    
     const mf = document.getElementById('muzzle-flash');
     if (mf) {
       mf.classList.remove('flash');
@@ -129,21 +137,39 @@ export const WeaponSystem = {
 
     this.viewModelRecoil = w.recoil || 0.1;
 
+    this.raycaster.camera = Renderer.camera;
     this.raycaster.set(Renderer.camera.position, Renderer.camera.getWorldDirection(new THREE.Vector3()));
+    
+    // 3D Muzzle Flash
+    const gunTip = new THREE.Vector3(0.15, -0.15, -0.5);
+    gunTip.applyMatrix4(Renderer.camera.matrixWorld);
+    ParticleSystem.spawnMuzzleFlash(gunTip, Renderer.camera.getWorldDirection(new THREE.Vector3()), isHeavy ? 1.5 : 1.0);
+
     const hits = this.raycaster.intersectObjects(Renderer.scene.children, true);
 
+    let finalHitPt = Renderer.camera.position.clone().add(Renderer.camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(100));
+
     for (const hit of hits) {
+      if (hit.object.type === 'Points' || hit.object.type === 'Sprite' || (hit.object.material && hit.object.material.visible === false)) continue;
+      
       let tg = hit.object;
       while (tg && !tg.userData.isTarget) tg = tg.parent;
       if (tg && tg.userData.isTarget && tg.userData.alive) {
         TargetManager.targetHit(tg, hit.point, w.damage);
+        SoundManager.playHitMarker();
+        finalHitPt = hit.point;
         break;
       }
+      
       if (!tg || !tg.userData.isTarget) {
         TargetManager.spawnImpact(hit.point, 0x5577cc, 6);
+        ParticleSystem.spawnSparks(hit.point, hit.face ? hit.face.normal : new THREE.Vector3(0, 1, 0), 0xffff88);
+        finalHitPt = hit.point;
         break;
       }
     }
+
+    TargetManager.spawnTracer(gunTip, finalHitPt);
 
     if (ammo.current <= 0 && ammo.reserve > 0) setTimeout(() => this.startReload(), 300);
   },
@@ -158,9 +184,12 @@ export const WeaponSystem = {
       setTimeout(() => { if (this.viewModel) this.viewModel.position.copy(startPos); }, 100);
     }
     
+    this.raycaster.camera = Renderer.camera;
     this.raycaster.set(Renderer.camera.position, Renderer.camera.getWorldDirection(new THREE.Vector3()));
     const hits = this.raycaster.intersectObjects(Renderer.scene.children, true);
     for (const hit of hits) {
+      if (hit.object.type === 'Points' || hit.object.type === 'Sprite' || (hit.object.material && hit.object.material.visible === false)) continue;
+
       if (hit.distance <= w.range) {
         let tg = hit.object;
         while (tg && !tg.userData.isTarget) tg = tg.parent;
@@ -188,7 +217,8 @@ export const WeaponSystem = {
       setTimeout(() => { if (this.viewModel) this.viewModel.position.copy(startPos); }, 150);
     }
     
-    const pos = Renderer.camera.position.clone().add(Renderer.camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(0.5));
+    const pos = new THREE.Vector3(0.15, -0.15, -0.5);
+    pos.applyMatrix4(Renderer.camera.matrixWorld);
     const vel = Renderer.camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(15);
     vel.y += 4;
     
@@ -214,6 +244,9 @@ export const WeaponSystem = {
     g.mesh.material.dispose();
     
     TargetManager.spawnImpact(g.mesh.position, 0xffaa00, 40);
+    ParticleSystem.spawnExplosion(g.mesh.position, 0xffaa00, 2.0);
+    SoundManager.playExplosion();
+    Renderer.shake(0.3, 0.4);
     
     TargetManager.targets.forEach(t => {
       if (!t.userData.alive) return;
@@ -229,7 +262,9 @@ export const WeaponSystem = {
     const ammo = GameState.weaponAmmo[GameState.activeWeaponId()];
     if (!ammo || this.isReloading || ammo.current === this.activeWeapon().magSize || ammo.reserve <= 0) return;
     this.isReloading = true;
+    this.setScope(false);
     this.reloadTimer = this.activeWeapon().reloadTime || 1.8;
+    SoundManager.playReload();
     const ad = document.getElementById('ammo-display');
     if (ad) ad.classList.add('reloading');
     
@@ -260,15 +295,38 @@ export const WeaponSystem = {
     this.updateAmmoDisplay();
   },
 
-  switchWeapon(slot) {
-    if (GameState.currentSlot === slot || !GameState.loadout[slot] || this.isSwitching) return;
-    if (GameState.loadout[slot] === 'locked') return;
+  setScope(val) {
+    if (this.isScoped === val) return;
+    this.isScoped = val;
+    Renderer.camera.fov = this.isScoped ? 20 : 75;
+    Renderer.camera.updateProjectionMatrix();
+    if (this.viewModel) this.viewModel.visible = !this.isScoped;
+    
+    const scopeEl = document.getElementById('sniper-scope');
+    const crosshairEl = document.getElementById('crosshair');
+    if (scopeEl) scopeEl.classList.toggle('hidden', !this.isScoped);
+    if (crosshairEl) crosshairEl.classList.toggle('hidden', this.isScoped);
+  },
+
+  toggleScope() {
+    const w = this.activeWeapon();
+    // Only allow sniper to scope (can expand logic later)
+    if (w && w.name === 'Sniper' && !this.isReloading && !this.isSwitching) {
+      this.setScope(!this.isScoped);
+    }
+  },
+
+  switchWeapon(slot, force = false) {
+    if (!GameState.loadout[slot] || GameState.loadout[slot] === 'locked') return;
+    if (!force && (GameState.currentSlot === slot || this.isSwitching)) return;
     
     if (this.isReloading) {
       this.isReloading = false;
       const ad = document.getElementById('ammo-display');
       if (ad) ad.classList.remove('reloading');
     }
+    
+    this.setScope(false);
 
     GameState.currentSlot = slot;
     this.isSwitching = true;

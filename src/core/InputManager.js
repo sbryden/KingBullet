@@ -35,10 +35,12 @@ export const InputManager = {
     document.addEventListener('pointerlockchange', () => {
       this.isLocked = !!document.pointerLockElement;
       
-      if (!this.isLocked) {
+      const wardrobeUi = document.getElementById('wardrobe-ui');
+      const isWardrobeOpen = wardrobeUi && !wardrobeUi.classList.contains('hidden');
+
+      if (!this.isLocked && !isWardrobeOpen) {
         document.getElementById('start-screen').classList.remove('hidden');
         document.getElementById('hud').classList.remove('visible');
-        document.getElementById('loadout-screen').classList.remove('visible');
       }
     });
   },
