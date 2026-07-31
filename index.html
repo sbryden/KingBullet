@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>King Bullet — FPS Target Range</title>
+  <title>King Bullet — FPS Target Range | BrewMoose Labs</title>
+  <meta name="description" content="King Bullet by BrewMoose Labs. An innovative, premium FPS target range game focused on speed, precision, and excellence.">
+  <meta name="keywords" content="King Bullet, BrewMoose Labs, Game, FPS, Target Range, Premium, Innovation, Speed, Precision">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
@@ -16,166 +19,85 @@
 <div id="start-screen">
   <h1>KING BULLET</h1>
   <p>Enter the arena and eliminate every target. Test your aim and reflexes in this high-octane shooting range.</p>
-  <div class="controls-hint">
-    <span><b>W A S D</b> — Move</span>
-    <span><b>Mouse</b> — Aim</span>
-    <span><b>Hold Click</b> — Full Auto</span>
-    <span><b>Space</b> — Jump</span>
-    <span><b>E</b> — Reload</span>
-    <span><b>Shift</b> — Sprint</span>
-    <span><b>1 2 3</b> — Switch Weapon</span>
-    <span><b>V</b> — Melee</span>
-  </div>
-  <button id="start-btn">ENTER ARENA</button>
+  <button id="start-btn">ENTER LOBBY</button>
 </div>
 
-<!-- Loadout Screen -->
-<div id="loadout-screen">
-  <h2>⚔ LOAD OUT ⚔</h2>
+<!-- Lobby UI (Overlay on 3D Forest) -->
+<div id="lobby-ui" class="hidden">
+  
+  <!-- Top Navigation Bar -->
+  <div id="lobby-nav">
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-target="shop">SHOP</button>
+      <button class="nav-tab" data-target="inventory">INVENTORY</button>
+    </div>
+    <div class="nav-right">
+      <div id="kb-display">◆ <span id="kb-display-val">0</span> KB</div>
+      <button id="nav-deploy-btn">DEPLOY ➔</button>
+    </div>
+  </div>
 
-  <div class="loadout-columns">
-    <!-- Primary Column -->
-    <div class="loadout-col" id="col-primary">
-      <div class="loadout-col-title">Primary</div>
-
-      <div class="weapon-card selected" data-slot="primary" data-weapon="ruger">
-        <div class="weapon-card-header">
-          <span class="weapon-icon">🔫</span>
-          <div><div class="weapon-name">Ruger Mark IV</div><div class="weapon-caliber">.22 LR</div></div>
+  <!-- Shop & Inventory Panel (Outfit Selection) -->
+  <div id="outfits-panel" class="lobby-panel active">
+    
+    <!-- Fullscreen Grid Container -->
+    <div id="skins-grid-container" class="skins-fullscreen">
+      <div class="skins-panel-header">
+        <h2 id="outfits-panel-title">SHOP</h2>
+        <div id="shop-timer" class="shop-timer hidden">REFRESHES IN 12:45:00</div>
+      </div>
+      
+      <!-- Inventory Content -->
+      <div id="inventory-content" class="hidden">
+        <div class="category-tabs">
+          <button class="cat-tab active" data-cat="all">ALL</button>
+          <button class="cat-tab" data-cat="military">MIL</button>
+          <button class="cat-tab" data-cat="tactical">TAC</button>
+          <button class="cat-tab" data-cat="street">STR</button>
+          <button class="cat-tab" data-cat="elite">ELI</button>
         </div>
-        <div class="weapon-stats">
-          <div class="stat-row"><span class="stat-name">Damage</span><div class="stat-bar-outer"><div class="stat-bar-inner dmg" style="width:25%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Fire Rate</span><div class="stat-bar-outer"><div class="stat-bar-inner rof" style="width:40%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Accuracy</span><div class="stat-bar-outer"><div class="stat-bar-inner acc" style="width:95%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Mag</span><div class="stat-bar-outer"><div class="stat-bar-inner mag" style="width:10%"></div></div></div>
+        <div id="outfit-grid" class="outfit-grid">
+          <!-- Owned outfits injected via JS -->
         </div>
       </div>
 
-      <div class="weapon-card" data-slot="primary" data-weapon="mp5">
-        <div class="weapon-card-header">
-          <span class="weapon-icon">🔫</span>
-          <div><div class="weapon-name">MP5</div><div class="weapon-caliber">9×19mm</div></div>
-        </div>
-        <div class="weapon-stats">
-          <div class="stat-row"><span class="stat-name">Damage</span><div class="stat-bar-outer"><div class="stat-bar-inner dmg" style="width:30%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Fire Rate</span><div class="stat-bar-outer"><div class="stat-bar-inner rof" style="width:80%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Accuracy</span><div class="stat-bar-outer"><div class="stat-bar-inner acc" style="width:90%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Mag</span><div class="stat-bar-outer"><div class="stat-bar-inner mag" style="width:30%"></div></div></div>
-        </div>
-      </div>
-
-      <div class="weapon-card" data-slot="primary" data-weapon="sniper">
-        <div class="weapon-card-header">
-          <span class="weapon-icon">🎯</span>
-          <div><div class="weapon-name">Sniper</div><div class="weapon-caliber">.338 Lapua</div></div>
-        </div>
-        <div class="weapon-stats">
-          <div class="stat-row"><span class="stat-name">Damage</span><div class="stat-bar-outer"><div class="stat-bar-inner dmg" style="width:100%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Fire Rate</span><div class="stat-bar-outer"><div class="stat-bar-inner rof" style="width:5%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Accuracy</span><div class="stat-bar-outer"><div class="stat-bar-inner acc" style="width:98%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Mag</span><div class="stat-bar-outer"><div class="stat-bar-inner mag" style="width:5%"></div></div></div>
-        </div>
-      </div>
-
-      <div class="weapon-card" data-slot="primary" data-weapon="machinegun">
-        <div class="weapon-card-header">
-          <span class="weapon-icon">💥</span>
-          <div><div class="weapon-name">Machine Gun</div><div class="weapon-caliber">5.56×45mm</div></div>
-        </div>
-        <div class="weapon-stats">
-          <div class="stat-row"><span class="stat-name">Damage</span><div class="stat-bar-outer"><div class="stat-bar-inner dmg" style="width:25%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Fire Rate</span><div class="stat-bar-outer"><div class="stat-bar-inner rof" style="width:100%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Accuracy</span><div class="stat-bar-outer"><div class="stat-bar-inner acc" style="width:60%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Mag</span><div class="stat-bar-outer"><div class="stat-bar-inner mag" style="width:100%"></div></div></div>
-        </div>
-        <div class="weapon-note">⚠ No secondary weapon</div>
+      <!-- Shop Content -->
+      <div id="shop-content">
+        <h3 class="shop-section-title">FEATURED</h3>
+        <div id="featured-grid" class="featured-grid"></div>
+        <h3 class="shop-section-title">DAILY ITEMS</h3>
+        <div id="daily-grid" class="daily-grid"></div>
       </div>
     </div>
 
-    <!-- Secondary Column -->
-    <div class="loadout-col" id="col-secondary" style="position:relative;">
-      <div class="loadout-col-title">Secondary</div>
-
-      <div class="weapon-card selected" data-slot="secondary" data-weapon="pistol">
-        <div class="weapon-card-header">
-          <span class="weapon-icon">🔫</span>
-          <div><div class="weapon-name">Pistol</div><div class="weapon-caliber">9mm</div></div>
+    <!-- Focus Mode Container (Hidden until clicked) -->
+    <div id="skins-focus-container" class="skins-focus hidden">
+      <div id="anim-state-label">STANDING</div>
+      
+      <div class="item-focus-sidebar">
+        <button id="back-to-grid-btn">⮜ BACK</button>
+        <div class="item-focus-details">
+          <h1 id="focus-name">OUTFIT NAME</h1>
+          <div id="focus-rarity" class="focus-rarity">RARITY</div>
+          <p id="focus-desc">A highly trained operative.</p>
         </div>
-        <div class="weapon-stats">
-          <div class="stat-row"><span class="stat-name">Damage</span><div class="stat-bar-outer"><div class="stat-bar-inner dmg" style="width:40%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Fire Rate</span><div class="stat-bar-outer"><div class="stat-bar-inner rof" style="width:25%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Accuracy</span><div class="stat-bar-outer"><div class="stat-bar-inner acc" style="width:88%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Mag</span><div class="stat-bar-outer"><div class="stat-bar-inner mag" style="width:12%"></div></div></div>
+        <div id="unlock-area" class="hidden">
+          <button id="unlock-btn" disabled>🔓 UNLOCK — 0 KB</button>
         </div>
-      </div>
-
-      <div class="weapon-card" data-slot="secondary" data-weapon="grenade">
-        <div class="weapon-card-header">
-          <span class="weapon-icon">💣</span>
-          <div><div class="weapon-name">Grenade</div><div class="weapon-caliber">Frag</div></div>
-        </div>
-        <div class="weapon-stats">
-          <div class="stat-row"><span class="stat-name">Damage</span><div class="stat-bar-outer"><div class="stat-bar-inner dmg" style="width:100%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Range</span><div class="stat-bar-outer"><div class="stat-bar-inner rng" style="width:70%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Mag</span><div class="stat-bar-outer"><div class="stat-bar-inner mag" style="width:4%"></div></div></div>
-        </div>
-        <div class="weapon-note">×4 throwable — area damage</div>
-      </div>
-
-      <div class="weapon-card" data-slot="secondary" data-weapon="tecdc9">
-        <div class="weapon-card-header">
-          <span class="weapon-icon">🔫</span>
-          <div><div class="weapon-name">Tec-DC9</div><div class="weapon-caliber">9mm</div></div>
-        </div>
-        <div class="weapon-stats">
-          <div class="stat-row"><span class="stat-name">Damage</span><div class="stat-bar-outer"><div class="stat-bar-inner dmg" style="width:22%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Fire Rate</span><div class="stat-bar-outer"><div class="stat-bar-inner rof" style="width:72%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Accuracy</span><div class="stat-bar-outer"><div class="stat-bar-inner acc" style="width:55%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Mag</span><div class="stat-bar-outer"><div class="stat-bar-inner mag" style="width:32%"></div></div></div>
-        </div>
-      </div>
-
-      <div class="locked-overlay" id="secondary-locked">
-        <span>🔒 LOCKED</span>
-        <small>Machine Gun has no secondary</small>
-      </div>
-    </div>
-
-    <!-- Melee Column -->
-    <div class="loadout-col" id="col-melee">
-      <div class="loadout-col-title">Melee</div>
-
-      <div class="weapon-card selected" data-slot="melee" data-weapon="knife">
-        <div class="weapon-card-header">
-          <span class="weapon-icon">🔪</span>
-          <div><div class="weapon-name">Knife</div><div class="weapon-caliber">Quick slash</div></div>
-        </div>
-        <div class="weapon-stats">
-          <div class="stat-row"><span class="stat-name">Damage</span><div class="stat-bar-outer"><div class="stat-bar-inner dmg" style="width:60%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Speed</span><div class="stat-bar-outer"><div class="stat-bar-inner spd" style="width:90%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Range</span><div class="stat-bar-outer"><div class="stat-bar-inner rng" style="width:35%"></div></div></div>
-        </div>
-      </div>
-
-      <div class="weapon-card" data-slot="melee" data-weapon="bayonet">
-        <div class="weapon-card-header">
-          <span class="weapon-icon">⚔️</span>
-          <div><div class="weapon-name">Bayonet</div><div class="weapon-caliber">Attached to primary</div></div>
-        </div>
-        <div class="weapon-stats">
-          <div class="stat-row"><span class="stat-name">Damage</span><div class="stat-bar-outer"><div class="stat-bar-inner dmg" style="width:80%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Speed</span><div class="stat-bar-outer"><div class="stat-bar-inner spd" style="width:50%"></div></div></div>
-          <div class="stat-row"><span class="stat-name">Range</span><div class="stat-bar-outer"><div class="stat-bar-inner rng" style="width:55%"></div></div></div>
+        <div id="equip-area" class="hidden">
+          <button id="equip-btn">EQUIP</button>
         </div>
       </div>
     </div>
   </div>
 
-  <button id="deploy-btn">DEPLOY</button>
+  </div>
 </div>
 
 <!-- HUD -->
 <div id="hud">
+  <!-- Damage vignette (red flash when hit) -->
+  <div id="damage-vignette"></div>
   <div id="crosshair"><div class="crosshair-dot"></div></div>
   <div id="hitmarker">
     <svg viewBox="0 0 24 24" width="24" height="24">
@@ -212,9 +134,29 @@
     <div class="slot-ind" id="slot-2">2 SEC</div>
     <div class="slot-ind" id="slot-3">3 MEL</div>
   </div>
+  <div id="interact-prompt" class="hidden"></div>
   <div id="muzzle-flash"></div>
+  <div id="sniper-scope" class="hidden">
+    <div class="scope-crosshair"></div>
+  </div>
   <div id="minimap-container"><canvas id="minimap-canvas" width="140" height="140"></canvas></div>
 </div>
+
+<!-- Death Screen -->
+<div id="death-screen" class="hidden">
+  <div class="death-container">
+    <h1 class="death-title">YOU DIED</h1>
+    <p class="death-sub">The enemy got you.</p>
+    <div class="death-stats">
+      <div class="ds-row"><span>Score</span><span id="death-score">0</span></div>
+      <div class="ds-row"><span>Kills</span><span id="death-kills">0</span></div>
+      <div class="ds-row ds-kb"><span>KB Earned</span><span id="death-kb">+0</span></div>
+    </div>
+    <button id="respawn-btn">RESPAWN</button>
+  </div>
+</div>
+
+
 
 <canvas id="game-canvas"></canvas>
 
