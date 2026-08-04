@@ -369,3 +369,35 @@ document.getElementById('respawn-btn').addEventListener('click', () => {
   LobbySystem.init();
   updateKBDisplay();
 });
+
+document.getElementById('victory-respawn-btn').addEventListener('click', () => {
+  document.getElementById('victory-screen').classList.add('hidden');
+  document.getElementById('respawn-btn').click(); // Reuse respawn logic
+});
+
+window.addEventListener('matchStateChanged', (e) => {
+  const data = e.detail;
+  if (data.state === 'PLAYING') {
+    EnemyManager.spawnEnemies(data.botsToSpawn || 0);
+  } else if (data.state === 'FINISHED') {
+    // Show victory screen if the player is alive
+    if (GameState.isAlive) {
+      document.getElementById('victory-screen').classList.remove('hidden');
+      document.exitPointerLock();
+      
+      const vScore = document.getElementById('victory-score');
+      const vKills = document.getElementById('victory-kills');
+      const vKb = document.getElementById('victory-kb');
+      
+      const bonusKB = Math.floor(GameState.score / 5) + 100; // Extra win bonus
+      GameState.earnKB(bonusKB);
+      
+      if (vScore) vScore.textContent = GameState.score;
+      if (vKills) vKills.textContent = GameState.kills;
+      if (vKb) vKb.textContent = "+" + GameState.kbEarnedThisRound;
+    }
+  } else if (data.state === 'WAITING' || data.state === 'STARTING') {
+    // Cleanup any lingering bots
+    EnemyManager.reset();
+  }
+});

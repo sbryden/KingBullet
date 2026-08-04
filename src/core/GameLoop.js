@@ -57,11 +57,8 @@ export const GameLoop = {
 
     Player.update(delta);
     
-    // Auto-start the arena if the player steps clearly into the arena (past the doorway)
-    if (!GameState.isArenaActive && Player.position.z < ARENA_SIZE / 2 - 3) {
-      GameState.isArenaActive = true;
-      TargetManager.startArena(); // shim -> EnemyManager.startArena()
-    }
+    // Arena start is now managed by the Match State from the server, 
+    // so we don't automatically trigger it on crossing the threshold.
     
     if (InputManager.mouseHeld) {
       WeaponSystem.shoot();
@@ -111,6 +108,28 @@ export const GameLoop = {
     const s = Math.floor(GameState.gameTime % 60);
     const el = document.getElementById('timer-val');
     if (el) el.textContent = m + ':' + String(s).padStart(2, '0');
+
+    const aliveEl = document.getElementById('alive-val');
+    if (aliveEl) aliveEl.textContent = GameState.aliveCount + "/30";
+
+    // Match status
+    const statusEl = document.getElementById('match-status');
+    const textEl = document.getElementById('match-status-text');
+    const statusTimerEl = document.getElementById('match-status-timer');
+    if (statusEl && textEl && statusTimerEl) {
+      if (GameState.matchState === 'WAITING' || GameState.matchState === 'STARTING') {
+        statusEl.classList.remove('hidden');
+        if (GameState.matchState === 'WAITING') {
+           textEl.textContent = 'WAITING FOR PLAYERS';
+           statusTimerEl.textContent = '';
+        } else {
+           textEl.textContent = 'MATCH STARTS IN';
+           statusTimerEl.textContent = Math.ceil(GameState.queueTimer) + 's';
+        }
+      } else {
+        statusEl.classList.add('hidden');
+      }
+    }
   },
 
   updateInteraction() {
@@ -145,7 +164,9 @@ export const GameLoop = {
             prompt.classList.add('hidden'); // hide if already opened
           }
         } else if (this.currentInteractable.userData.isWeaponDrop) {
-          prompt.textContent = "[Q] Pick up " + WEAPONS[this.currentInteractable.userData.weaponId].name;
+          const rarity = this.currentInteractable.userData.rarity || 'common';
+          const rarityName = rarity.charAt(0).toUpperCase() + rarity.slice(1);
+          prompt.textContent = `[Q] Pick up ${rarityName} ` + WEAPONS[this.currentInteractable.userData.weaponId].name;
         }
       } else {
         prompt.classList.add('hidden');
@@ -173,10 +194,13 @@ export const GameLoop = {
     } else if (obj.userData.isWeaponDrop) {
       const slot = obj.userData.slot;
       const newWep = obj.userData.weaponId;
+      const newRarity = obj.userData.rarity || 'common';
       const currentWep = GameState.loadout[slot];
+      const currentRarity = GameState.loadoutRarities[slot] || 'common';
       
       // Equip new weapon
       GameState.loadout[slot] = newWep;
+      GameState.loadoutRarities[slot] = newRarity;
       GameState.initAmmo();
       WeaponSystem.switchWeapon(slot, true);
       
@@ -193,7 +217,7 @@ export const GameLoop = {
         fwd.y = 0; fwd.normalize();
         dropPos.add(fwd.multiplyScalar(1.5));
         
-        LootSystem.spawnGroundWeapon(currentWep, dropPos);
+        LootSystem.spawnGroundWeapon(currentWep, dropPos, currentRarity);
       }
       this.clearInteraction();
     } else if (obj.userData.isWardrobeInteract) {

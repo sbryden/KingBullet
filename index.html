@@ -109,8 +109,14 @@
     </svg>
   </div>
 
+  <div id="match-status" class="hidden">
+    <div id="match-status-text">WAITING FOR PLAYERS</div>
+    <div id="match-status-timer"></div>
+  </div>
+
   <div id="top-bar">
     <div class="stat"><span class="stat-label">Score</span><span class="stat-value" id="score-val">0</span></div>
+    <div class="stat"><span class="stat-label">Alive</span><span class="stat-value" id="alive-val">0</span></div>
     <div class="stat"><span class="stat-label">Targets</span><span class="stat-value" id="kills-val">0</span></div>
     <div class="stat"><span class="stat-label">Time</span><span class="stat-value" id="timer-val">0:00</span></div>
   </div>
@@ -153,11 +159,23 @@
       <div class="ds-row"><span>Kills</span><span id="death-kills">0</span></div>
       <div class="ds-row ds-kb"><span>KB Earned</span><span id="death-kb">+0</span></div>
     </div>
-    <button id="respawn-btn">RESPAWN</button>
+    <button id="respawn-btn">RETURN TO LOBBY</button>
   </div>
 </div>
 
-
+<!-- Victory Screen -->
+<div id="victory-screen" class="hidden">
+  <div class="death-container victory-container">
+    <h1 class="death-title" style="color: #00e5ff; text-shadow: 0 0 20px rgba(0,229,255,0.5);">VICTORY ROYALE</h1>
+    <p class="death-sub">You are the last one standing.</p>
+    <div class="death-stats">
+      <div class="ds-row"><span>Score</span><span id="victory-score">0</span></div>
+      <div class="ds-row"><span>Kills</span><span id="victory-kills">0</span></div>
+      <div class="ds-row ds-kb"><span>KB Earned</span><span id="victory-kb">+0</span></div>
+    </div>
+    <button id="victory-respawn-btn">RETURN TO LOBBY</button>
+  </div>
+</div>
 
 <canvas id="game-canvas"></canvas>
 

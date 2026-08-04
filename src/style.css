@@ -1242,3 +1242,56 @@ html, body {
   display: inline-block;
   box-shadow: 0 4px 15px rgba(255, 215, 64, 0.4);
 }
+
+/* ── Match Status & Victory ───────────────────────────── */
+#match-status {
+  position: absolute;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  background: rgba(10, 15, 25, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 24px;
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+#match-status-text {
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: #fff;
+  opacity: 0.8;
+}
+#match-status-timer {
+  font-size: 32px;
+  font-weight: 700;
+  color: #00e5ff;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+.victory-container {
+  border-color: rgba(0, 229, 255, 0.3) !important;
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.15) !important;
+}
+#victory-respawn-btn {
+  width: 100%;
+  padding: 16px;
+  background: #00e5ff;
+  color: #0a0f19;
+  border: none;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+#victory-respawn-btn:hover {
+  background: #fff;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+}
+#victory-respawn-btn:active {
+  transform: scale(0.98);
+}

@@ -4,11 +4,16 @@ export const GameState = {
   score: 0,
   kills: 0,
   gameTime: 0,
-  loadout: { primary: null, secondary: null, melee: 'knife' },
-  currentSlot: 'melee',
+  loadout: { primary: 'ak47', secondary: 'pistol', melee: 'knife' },
+  loadoutRarities: { primary: 'common', secondary: 'common', melee: 'common' },
+  currentSlot: 'primary',
   weaponAmmo: {},
   
   isArenaActive: false,
+  matchState: 'WAITING',
+  queueTimer: 0,
+  aliveCount: 0,
+  isAlive: true,
 
   kb: 0,
   kbLifetime: 0,
@@ -16,7 +21,7 @@ export const GameState = {
 
   // ── Outfit system ────────────────────────────────────────
   outfitIndex: 0,
-  unlockedOutfits: ['boy_starter', 'girl_starter'],
+  unlockedOutfits: ['boy_starter', 'girl_starter', 'cameron'],
 
   outfits: [
     { 
@@ -38,6 +43,16 @@ export const GameState = {
       camo: null, sleeves: 'short', gloves: null,
       gear: { head: 'cowboy_hat', hair: 'girl_hair' },
       description: 'The starter girl, rocking a white top, jeans, and a cowboy hat.'
+    },
+    {
+      id: 'cameron',
+      name: 'Cameron',
+      category: 'street',
+      price: 0, rarity: 'uncommon', shopSection: 'featured',
+      skin: 0xffdcba, shirt: 0x3a7d44, pants: 0xc2a878, shoes: 0x4a4a4a, hair: 0xf5d442,
+      camo: null, sleeves: 'short', gloves: null,
+      gear: { hair: 'boy_hair', face: 'nerd_glasses' },
+      description: 'A nerdy little boy with thick glasses and two enormous buck teeth. 🤓'
     }
   ],
 
@@ -123,9 +138,11 @@ export const GameState = {
     this.kills = 0;
     this.gameTime = 0;
     this.kbEarnedThisRound = 0;
-    this.loadout = { primary: null, secondary: null, melee: 'knife' };
-    this.currentSlot = 'melee';
+    this.loadout = { primary: 'ak47', secondary: 'pistol', melee: 'knife' };
+    this.loadoutRarities = { primary: 'common', secondary: 'common', melee: 'common' };
+    this.currentSlot = 'primary';
     this.isArenaActive = false;
+    this.isAlive = true;
   },
 
   activeWeapon() {
@@ -134,5 +151,9 @@ export const GameState = {
 
   activeWeaponId() {
     return this.loadout[this.currentSlot];
+  },
+
+  activeWeaponRarity() {
+    return this.loadoutRarities[this.currentSlot];
   }
 };

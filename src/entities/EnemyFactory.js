@@ -235,6 +235,8 @@ export const EnemyFactory = {
 
     const isSmiler = outfit.id === 'smiler';
 
+    const isCameron = outfit.id === 'cameron';
+
     if (isSmiler) {
       const eyeGeo  = new THREE.SphereGeometry(0.05, 12, 12);
       const eyeMat  = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -270,6 +272,35 @@ export const EnemyFactory = {
       rEar.rotation.z = -Math.PI / 3;
       rEar.rotation.x = 0.2;
       head.add(rEar);
+    } else if (isCameron) {
+      // Cameron: nerdy little boy face 🤓
+      // Smaller eyes (behind thick glasses)
+      const eyeGeo  = new THREE.SphereGeometry(0.04, 8, 8);
+      const eyeMat  = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const pupGeo  = new THREE.SphereGeometry(0.022, 8, 8);
+      const pupMat  = new THREE.MeshBasicMaterial({ color: 0x3366aa }); // blue eyes
+      [[-0.09, 0.05], [0.09, 0.05]].forEach(([ex]) => {
+        const eye = new THREE.Mesh(eyeGeo, eyeMat);
+        eye.position.set(ex, 0.05, 0.18);
+        const pup = new THREE.Mesh(pupGeo, pupMat);
+        pup.position.set(0, 0, 0.02);
+        eye.add(pup);
+        head.add(eye);
+      });
+      // Two oversized buck teeth sticking out from the bottom of the face
+      const toothMat = new THREE.MeshStandardMaterial({ color: 0xfcf8e8, roughness: 0.4, metalness: 0.05 });
+      const toothL = _box(0.06, 0.14, 0.06, -0.04, -0.20, 0.12, toothMat);
+      head.add(toothL);
+      const toothR = _box(0.06, 0.14, 0.06,  0.04, -0.20, 0.12, toothMat);
+      head.add(toothR);
+      // Tiny freckles (small dots on cheeks)
+      const freckleMat = new THREE.MeshBasicMaterial({ color: 0xc9956b });
+      const freckleGeo = new THREE.SphereGeometry(0.012, 4, 4);
+      [[-0.12, -0.02, 0.17], [-0.10, -0.06, 0.17], [0.12, -0.02, 0.17], [0.10, -0.06, 0.17]].forEach(([fx, fy, fz]) => {
+        const f = new THREE.Mesh(freckleGeo, freckleMat);
+        f.position.set(fx, fy, fz);
+        head.add(f);
+      });
     } else {
       const eyeGeo  = new THREE.SphereGeometry(0.035, 8, 8);
       const eyeMat  = new THREE.MeshBasicMaterial({ color: 0xffffff });

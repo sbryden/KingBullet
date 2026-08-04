@@ -226,6 +226,21 @@ export const Player = {
       this.canJump = false;
       InputManager.keys['Space'] = false; // consume jump
     }
+    
+    // Jump Pads
+    if (Arena.jumpPads) {
+      for (const pad of Arena.jumpPads) {
+        const dx = this.position.x - pad.mesh.position.x;
+        const dz = this.position.z - pad.mesh.position.z;
+        const distSq = dx * dx + dz * dz;
+        // Check if player is near the pad (radius 2) and roughly at the same height
+        const dy = this.position.y - (pad.mesh.position.y + PLAYER_HEIGHT);
+        if (distSq < 4 && dy > -1.5 && dy < 1.5) {
+          this.velocityY = pad.boost;
+          this.canJump = false;
+        }
+      }
+    }
 
     // Gravity and Terrain collision
     this.velocityY += GRAVITY * delta;

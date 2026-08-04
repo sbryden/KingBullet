@@ -241,8 +241,29 @@ export const Arena = {
   },
 
   buildUrbanZone(scene) {
-    // Dense skyscrapers
-    const buildingMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.6, metalness: 0.2 });
+    // Generate a dynamic window texture
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    
+    // Base concrete
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(0, 0, 256, 256);
+    
+    // Draw glowing and dark windows
+    for (let y = 10; y < 256; y += 35) {
+        for (let x = 15; x < 256; x += 40) {
+            ctx.fillStyle = Math.random() > 0.8 ? '#ffffaa' : '#111122'; // 20% lit windows
+            ctx.fillRect(x, y, 20, 20);
+        }
+    }
+    
+    const windowTexture = new THREE.CanvasTexture(canvas);
+    windowTexture.wrapS = THREE.RepeatWrapping;
+    windowTexture.wrapT = THREE.RepeatWrapping;
+
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
     
     const citySize = 150;
     const blockSize = 30;
@@ -263,21 +284,120 @@ export const Arena = {
             const d = blockSize - roadWidth;
             const h = 20 + Math.random() * 60;
             
-            const building = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMat);
-            building.position.set(x, h/2, z);
-            building.castShadow = true;
-            building.receiveShadow = true;
-            scene.add(building);
-            this.obstacles.push(building);
-            this.collidables.push(building); // Raycaster needs this for dropping onto roofs
+            const lobbyH = 5;
+            const coreH = h - lobbyH;
+            const wallT = 1.0; // Wall thickness
+            const doorW = 4;
             
-            // Chests in alleys or on roofs
-            if (Math.random() > 0.5) {
+            const buildingGroup = new THREE.Group();
+            buildingGroup.position.set(x, 0, z);
+            
+            const lobbyWallMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.9 });
+            
+            // --- GROUND FLOOR (LOBBY) ---
+            const hw = w / 2;
+            const hd = d / 2;
+            
+            const addWall = (ww, hh, dd, px, py, pz) => {
+                const wall = new THREE.Mesh(new THREE.BoxGeometry(ww, hh, dd), lobbyWallMat);
+                wall.position.set(px, py, pz);
+                wall.castShadow = true;
+                wall.receiveShadow = true;
+                buildingGroup.add(wall);
+                this.obstacles.push(wall);
+            };
+
+            // Back wall
+            addWall(w, lobbyH, wallT, 0, lobbyH / 2, -hd + wallT / 2);
+            // Left wall
+            addWall(wallT, lobbyH, d, -hw + wallT / 2, lobbyH / 2, 0);
+            // Right wall
+            addWall(wallT, lobbyH, d, hw - wallT / 2, lobbyH / 2, 0);
+            // Front walls (with door gap in center)
+            const sideW = (w - doorW) / 2;
+            addWall(sideW, lobbyH, wallT, -hw + sideW / 2, lobbyH / 2, hd - wallT / 2);
+            addWall(sideW, lobbyH, wallT, hw - sideW / 2, lobbyH / 2, hd - wallT / 2);
+            
+            // Door header
+            addWall(doorW, 1.5, wallT, 0, lobbyH - 0.75, hd - wallT / 2);
+            
+            // Lobby ceiling
+            const ceiling = new THREE.Mesh(new THREE.BoxGeometry(w, 0.5, d), lobbyWallMat);
+            ceiling.position.set(0, lobbyH, 0);
+            ceiling.receiveShadow = true;
+            buildingGroup.add(ceiling);
+            // The ceiling is also a floor for the upper levels if players land on it? Actually, players won't be in the lobby ceiling, but if they get stuck...
+            
+            // --- UPPER FLOORS (SOLID CORE) ---
+            
+            // Create a unique material instance to scale the windows properly based on height
+            const bMat = new THREE.MeshStandardMaterial({ 
+                map: windowTexture, 
+                roughness: 0.7, 
+                metalness: 0.3 
+            });
+            // Clone texture so repeat settings are independent per material
+            bMat.map = windowTexture.clone();
+            bMat.map.needsUpdate = true;
+            bMat.map.repeat.set(w / 10, coreH / 10);
+            
+            // Apply window texture only to the sides. Use solid roof mat for top and bottom.
+            const materials = [bMat, bMat, roofMat, roofMat, bMat, bMat];
+            
+            const core = new THREE.Mesh(new THREE.BoxGeometry(w, coreH, d), materials);
+            core.position.set(0, lobbyH + coreH/2, 0);
+            core.castShadow = true;
+            core.receiveShadow = true;
+            buildingGroup.add(core);
+            
+            // The solid core is an obstacle.
+            this.obstacles.push(core);
+            this.collidables.push(core);
+            
+            scene.add(buildingGroup);
+            
+            // Rooftop details (AC Units, antennas)
+            const numDetails = Math.floor(Math.random() * 3) + 1;
+            for(let i=0; i<numDetails; i++) {
                 if (Math.random() > 0.5) {
-                    LootSystem.spawnChest(new THREE.Vector3(x, h + 0.5, z)); // Roof
+                    // AC Unit
+                    const ac = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshStandardMaterial({color: 0x888888}));
+                    ac.position.set(x + (Math.random()-0.5)*(w-4), h + 1, z + (Math.random()-0.5)*(d-4));
+                    ac.castShadow = true;
+                    scene.add(ac);
+                    this.collidables.push(ac);
+                    this.obstacles.push(ac);
                 } else {
-                    LootSystem.spawnChest(new THREE.Vector3(x - w/2 - 2, 0.5, z)); // Alley
+                    // Antenna
+                    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 5), new THREE.MeshStandardMaterial({color: 0x111111}));
+                    ant.position.set(x + (Math.random()-0.5)*(w-2), h + 2.5, z + (Math.random()-0.5)*(d-2));
+                    scene.add(ant);
                 }
+            }
+            
+            // Loot Chests
+            if (Math.random() > 0.3) {
+                // Chest in the lobby
+                LootSystem.spawnChest(new THREE.Vector3(x + (Math.random()-0.5)*10, 0.5, z + (Math.random()-0.5)*10));
+            }
+            if (Math.random() > 0.5) {
+                // Chest on the roof
+                LootSystem.spawnChest(new THREE.Vector3(x, h + 0.5, z));
+            }
+            
+            // Add a jump pad in the alley sometimes
+            if (Math.random() > 0.6) {
+                const padGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.2, 16);
+                const padMat = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00aa00, roughness: 0.2 });
+                const pad = new THREE.Mesh(padGeo, padMat);
+                // Position in the alley (outside the building footprint)
+                const padX = x - w/2 - 2;
+                pad.position.set(padX, 0.1, z);
+                scene.add(pad);
+                
+                // Track jump pads in Arena object
+                if (!this.jumpPads) this.jumpPads = [];
+                this.jumpPads.push({ mesh: pad, boost: 35 });
             }
         }
     }
@@ -302,9 +422,8 @@ export const Arena = {
         
         const container = new THREE.Mesh(containerGeo, mat);
         
-        // Stack them sometimes
-        const stackY = (Math.random() > 0.7) ? 7.5 : 2.5;
-        container.position.set(x, stackY, z);
+        // Base container
+        container.position.set(x, 2.5, z);
         
         // Snap rotation to 90 degrees
         container.rotation.y = (Math.random() > 0.5) ? Math.PI / 2 : 0;
@@ -315,8 +434,22 @@ export const Arena = {
         this.obstacles.push(container);
         this.collidables.push(container);
         
-        if (Math.random() > 0.8) {
-            LootSystem.spawnChest(new THREE.Vector3(x, stackY + 3.0, z)); // Chest on container
+        // Stack a second one on top sometimes
+        if (Math.random() > 0.7) {
+            const topContainer = new THREE.Mesh(containerGeo, mat);
+            topContainer.position.set(x, 7.5, z);
+            topContainer.rotation.y = container.rotation.y;
+            topContainer.castShadow = true;
+            topContainer.receiveShadow = true;
+            scene.add(topContainer);
+            this.obstacles.push(topContainer);
+            this.collidables.push(topContainer);
+            
+            if (Math.random() > 0.5) {
+                LootSystem.spawnChest(new THREE.Vector3(x, 10.5, z)); // Chest on top container
+            }
+        } else if (Math.random() > 0.8) {
+            LootSystem.spawnChest(new THREE.Vector3(x, 5.5, z)); // Chest on base container
         }
     }
     

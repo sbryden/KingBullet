@@ -46,3 +46,11 @@ export const WEAPONS = {
     damage: 100, fireRate: 0.6, range: 3.5, auto: false
   }
 };
+
+export const WEAPON_RARITIES = {
+  common:   { name: 'Common',   color: '#ffffff', dropWeight: 50, damageMult: 1.0 },
+  uncommon: { name: 'Uncommon', color: '#2ecc71', dropWeight: 30, damageMult: 1.15 },
+  rare:     { name: 'Rare',     color: '#3498db', dropWeight: 12, damageMult: 1.3 },
+  epic:     { name: 'Epic',     color: '#9b59b6', dropWeight: 6,  damageMult: 1.5 },
+  legendary:{ name: 'Legendary',color: '#f1c40f', dropWeight: 2,  damageMult: 1.8 }
+};

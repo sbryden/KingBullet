@@ -6,6 +6,7 @@ import { Arena } from '../entities/Arena.js';
 import { LootSystem } from './LootSystem.js';
 import { SoundManager } from '../core/SoundManager.js';
 import { ParticleSystem } from './ParticleSystem.js';
+import { NetworkManager } from '../core/NetworkManager.js';
 import {
   NUM_STATIC_TARGETS, NUM_MOVING_TARGETS,
   TARGET_RESPAWN_TIME, ARENA_SIZE, PLAYER_HEIGHT
@@ -36,12 +37,11 @@ export const EnemyManager = {
   playerHitFlash:  0,    // seconds remaining of red vignette
 
   _raycaster: new THREE.Raycaster(),
+  _frameCount: 0,
 
   // ── Initialise ──────────────────────────────────────────
   startArena() {
-    if (this.enemies.length > 0) return;
-    this.spawnEnemies();
-    this._updateHealthHUD();
+    // Arena is now started globally by the Match State
   },
 
   reset() {
@@ -60,9 +60,9 @@ export const EnemyManager = {
   },
 
   // ── Spawn ────────────────────────────────────────────────
-  spawnEnemies() {
-    const total = 30; // Max 30 bots
-    for (let i = 0; i < total; i++) {
+  spawnEnemies(count = 30) {
+    if (this.enemies.length > 0) this.reset();
+    for (let i = 0; i < count; i++) {
       this._spawnEnemy();
     }
   },
@@ -110,6 +110,8 @@ export const EnemyManager = {
       // Leg refs for animation
       _leftLeg:  group.userData._leftLeg,
       _rightLeg: group.userData._rightLeg,
+      
+      id: this.enemies.length
     };
 
     this.enemies.push(enemy);
@@ -121,6 +123,8 @@ export const EnemyManager = {
     const playerPos = camera.position;
     const aggroCount = this.enemies.filter(e => e.state === STATE.AGGRO).length;
 
+    this._frameCount++;
+
     // ── Enemies ──
     this.enemies.forEach(e => {
       if (e.state === STATE.DEAD) {
@@ -131,15 +135,21 @@ export const EnemyManager = {
       e.velocityY -= 20 * delta; // GRAVITY
       e.group.position.y += e.velocityY * delta;
 
-      let floorHeight = 0;
-      if (Arena.collidables && Arena.collidables.length > 0) {
-        const rayOrigin = new THREE.Vector3(e.group.position.x, e.group.position.y + 10, e.group.position.z);
-        const raycaster = new THREE.Raycaster(rayOrigin, new THREE.Vector3(0, -1, 0));
-        const intersects = raycaster.intersectObjects(Arena.collidables, false);
-        if (intersects.length > 0) {
-          floorHeight = intersects[0].point.y;
+      if ((this._frameCount + e.id) % 5 === 0) {
+        let floorHeight = 0;
+        if (Arena.collidables && Arena.collidables.length > 0) {
+          const rayOrigin = new THREE.Vector3(e.group.position.x, e.group.position.y + 10, e.group.position.z);
+          this._raycaster.set(rayOrigin, new THREE.Vector3(0, -1, 0));
+          this._raycaster.far = Infinity;
+          const intersects = this._raycaster.intersectObjects(Arena.collidables, false);
+          if (intersects.length > 0) {
+            floorHeight = intersects[0].point.y;
+          }
         }
+        e._lastFloorHeight = floorHeight;
       }
+
+      const floorHeight = e._lastFloorHeight || 0;
 
       const groundY = floorHeight - 0.41; // Enemy feet are at local y=0.41
       if (e.group.position.y <= groundY) {
@@ -157,21 +167,29 @@ export const EnemyManager = {
         const velX = dir.x * speedMult;
         const velZ = dir.z * speedMult;
         
-        const checkCol = (dirVec, dist) => {
+        const checkCol = (dirVec, dist, axis) => {
           if (!Arena.obstacles || Arena.obstacles.length === 0) return false;
+          
+          if ((this._frameCount + enemy.id) % 5 !== 0) {
+            return enemy[`_lastCol${axis}`] || false;
+          }
+          
           const origin = new THREE.Vector3(enemy.group.position.x, enemy.group.position.y + 0.5, enemy.group.position.z);
-          const raycaster = new THREE.Raycaster(origin, dirVec, 0, dist);
-          return raycaster.intersectObjects(Arena.obstacles, false).length > 0;
+          this._raycaster.set(origin, dirVec);
+          this._raycaster.far = dist;
+          const hit = this._raycaster.intersectObjects(Arena.obstacles, false).length > 0;
+          enemy[`_lastCol${axis}`] = hit;
+          return hit;
         };
         
         const r = 0.6;
         if (velX !== 0) {
           const dx = new THREE.Vector3(Math.sign(velX), 0, 0);
-          if (!checkCol(dx, r + Math.abs(velX))) enemy.group.position.x += velX;
+          if (!checkCol(dx, r + Math.abs(velX), 'X')) enemy.group.position.x += velX;
         }
         if (velZ !== 0) {
           const dz = new THREE.Vector3(0, 0, Math.sign(velZ));
-          if (!checkCol(dz, r + Math.abs(velZ))) enemy.group.position.z += velZ;
+          if (!checkCol(dz, r + Math.abs(velZ), 'Z')) enemy.group.position.z += velZ;
         }
       };
 
@@ -605,6 +623,8 @@ export const EnemyManager = {
     ParticleSystem.spawnExplosion(enemy.group.position, 0xcc1111, 1.5);
     SoundManager.playExplosion();
 
+    NetworkManager.notifyBotDeath();
+
     // Death collapse animation
     let p = 0;
     const collapse = () => {
@@ -651,6 +671,9 @@ export const EnemyManager = {
   },
 
   _triggerPlayerDeath() {
+    GameState.isAlive = false;
+    NetworkManager.notifyDeath();
+
     const scoreEl = document.getElementById('death-score');
     const killsEl = document.getElementById('death-kills');
     const kbEl = document.getElementById('death-kb');

@@ -356,6 +356,33 @@ export const OutfitFactory = {
         g.add(frame);
         break;
       }
+
+      case 'nerd_glasses': {
+        // Big thick nerdy glasses 🤓
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.85, metalness: 0.1 });
+        const nerdLensMat = new THREE.MeshStandardMaterial({ color: 0xddeeff, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.5 });
+        // Left lens frame (oversized)
+        const frameL = _box(0.14, 0.14, 0.04, -0.09, headY + 0.04, -0.19, frameMat);
+        g.add(frameL);
+        // Left lens glass
+        const glassL = _box(0.11, 0.11, 0.02, -0.09, headY + 0.04, -0.20, nerdLensMat);
+        g.add(glassL);
+        // Right lens frame (oversized)
+        const frameR = _box(0.14, 0.14, 0.04, 0.09, headY + 0.04, -0.19, frameMat);
+        g.add(frameR);
+        // Right lens glass
+        const glassR = _box(0.11, 0.11, 0.02, 0.09, headY + 0.04, -0.20, nerdLensMat);
+        g.add(glassR);
+        // Bridge (connects the two lenses across nose)
+        const bridge = _box(0.04, 0.03, 0.03, 0, headY + 0.06, -0.19, frameMat);
+        g.add(bridge);
+        // Temple arms (sides going back to ears)
+        const templeL = _box(0.03, 0.03, 0.22, -0.17, headY + 0.06, -0.08, frameMat);
+        g.add(templeL);
+        const templeR = _box(0.03, 0.03, 0.22, 0.17, headY + 0.06, -0.08, frameMat);
+        g.add(templeR);
+        break;
+      }
     }
 
     return g.children.length > 0 ? g : null;

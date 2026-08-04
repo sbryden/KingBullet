@@ -3,6 +3,7 @@ import { Renderer } from '../core/Renderer.js';
 import { GameState } from '../core/GameState.js';
 import { TargetManager } from './TargetManager.js';
 import { ViewModelFactory } from './ViewModelFactory.js';
+import { WEAPON_RARITIES } from '../config/weapons.js';
 import { ARENA_SIZE } from '../config/constants.js';
 import { SoundManager } from '../core/SoundManager.js';
 import { ParticleSystem } from './ParticleSystem.js';
@@ -155,7 +156,11 @@ export const WeaponSystem = {
       let tg = hit.object;
       while (tg && !tg.userData.isTarget) tg = tg.parent;
       if (tg && tg.userData.isTarget && tg.userData.alive) {
-        TargetManager.targetHit(tg, hit.point, w.damage);
+        const rarityKey = GameState.activeWeaponRarity() || 'common';
+        const rarityDef = WEAPON_RARITIES[rarityKey];
+        const mult = rarityDef ? rarityDef.damageMult : 1.0;
+        
+        TargetManager.targetHit(tg, hit.point, w.damage * mult);
         SoundManager.playHitMarker();
         finalHitPt = hit.point;
         break;
@@ -194,7 +199,11 @@ export const WeaponSystem = {
         let tg = hit.object;
         while (tg && !tg.userData.isTarget) tg = tg.parent;
         if (tg && tg.userData.isTarget && tg.userData.alive) {
-          TargetManager.targetHit(tg, hit.point, w.damage);
+          const rarityKey = GameState.activeWeaponRarity() || 'common';
+          const rarityDef = WEAPON_RARITIES[rarityKey];
+          const mult = rarityDef ? rarityDef.damageMult : 1.0;
+
+          TargetManager.targetHit(tg, hit.point, w.damage * mult);
           break;
         }
       }
@@ -229,11 +238,15 @@ export const WeaponSystem = {
     mesh.position.copy(pos);
     Renderer.scene.add(mesh);
     
+    const rarityKey = GameState.activeWeaponRarity() || 'common';
+    const rarityDef = WEAPON_RARITIES[rarityKey];
+    const mult = rarityDef ? rarityDef.damageMult : 1.0;
+
     this.grenadeProjectiles.push({
       mesh: mesh,
       vel: vel,
       timer: 2.0,
-      damage: w.damage,
+      damage: w.damage * mult,
       range: w.range
     });
   },
@@ -366,7 +379,19 @@ export const WeaponSystem = {
     const w = this.activeWeapon();
     if (!w) return;
     const info = document.getElementById('weapon-info');
-    if (info) info.textContent = `${w.name} — ${w.caliber}`;
+    if (info) {
+      const rarityKey = GameState.activeWeaponRarity() || 'common';
+      const rarityDef = WEAPON_RARITIES[rarityKey];
+      const color = rarityDef ? rarityDef.color : '#ffffff';
+      const name = rarityDef ? rarityDef.name : 'Common';
+      
+      // If it's a knife/melee, rarity doesn't matter as much, but we can still show it.
+      if (w.type === 'melee') {
+         info.textContent = `${w.name}`;
+      } else {
+         info.innerHTML = `<span style="color:${color}; font-weight:bold;">${name}</span> ${w.name} — ${w.caliber}`;
+      }
+    }
   },
 
   updateSlotIndicators() {

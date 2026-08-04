@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Renderer } from '../core/Renderer.js';
-import { WEAPONS } from '../config/weapons.js';
+import { WEAPONS, WEAPON_RARITIES } from '../config/weapons.js';
 import { ViewModelFactory } from './ViewModelFactory.js';
 
 export const LootSystem = {
@@ -56,17 +56,29 @@ export const LootSystem = {
         const weaponKeys = Object.keys(WEAPONS).filter(k => k !== 'knife'); // filter out starter knife
         const randomWep = weaponKeys[Math.floor(Math.random() * weaponKeys.length)];
         
+        // Roll for rarity
+        let rolledRarity = 'common';
+        const totalWeight = Object.values(WEAPON_RARITIES).reduce((acc, r) => acc + r.dropWeight, 0);
+        let rand = Math.random() * totalWeight;
+        for (const [key, r] of Object.entries(WEAPON_RARITIES)) {
+          if (rand < r.dropWeight) {
+            rolledRarity = key;
+            break;
+          }
+          rand -= r.dropWeight;
+        }
+        
         const spawnPos = chestData.chestObj.position.clone();
         spawnPos.y += 1.0; // spawn slightly above chest
         spawnPos.z += 1.0; // pop out in front
         
-        this.spawnGroundWeapon(randomWep, spawnPos);
+        this.spawnGroundWeapon(randomWep, spawnPos, rolledRarity);
       }
     };
     animateLid();
   },
 
-  spawnGroundWeapon(weaponId, position) {
+  spawnGroundWeapon(weaponId, position, rarity = 'common') {
     const w = WEAPONS[weaponId];
     if (!w) return;
 
@@ -96,15 +108,22 @@ export const LootSystem = {
       gunMesh.scale.set(4, 4, 4);
 
       const slot = w.type === 'melee' ? 'melee' : (w.type === 'pistol' || w.type === 'grenade' ? 'secondary' : 'primary');
-      wepGroup.userData = { isWeaponDrop: true, weaponId: weaponId, slot: slot, baseY: position.y };
+      wepGroup.userData = { isWeaponDrop: true, weaponId: weaponId, slot: slot, baseY: position.y, rarity: rarity };
       
       const hitbox = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshBasicMaterial({ visible: false }));
       hitbox.userData = wepGroup.userData;
       wepGroup.add(hitbox);
 
+      // Add rarity glow aura
+      const rarityDef = WEAPON_RARITIES[rarity];
+      const auraMat = new THREE.MeshBasicMaterial({ color: rarityDef.color, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+      const aura = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 4.0, 16), auraMat);
+      aura.position.set(0, 1.5, 0);
+      wepGroup.add(aura);
+
       wepGroup.add(gunMesh);
       Renderer.scene.add(wepGroup);
-      this.groundWeapons.push({ group: wepGroup, floatTime: Math.random() * 10 });
+      this.groundWeapons.push({ group: wepGroup, aura: aura, floatTime: Math.random() * 10 });
     }
   },
 
@@ -114,6 +133,9 @@ export const LootSystem = {
       w.floatTime += delta * 2;
       w.group.position.y = (w.group.userData.baseY || 1.0) + Math.sin(w.floatTime) * 0.2;
       w.group.rotation.y += delta;
+      if (w.aura) {
+        w.aura.material.opacity = 0.25 + Math.sin(w.floatTime * 2) * 0.1;
+      }
     }
   },
 

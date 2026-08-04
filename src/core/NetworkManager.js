@@ -47,9 +47,21 @@ export class NetworkManager {
     this.socket.on('gameStateUpdate', (serverState) => {
       if (!this.isConnected) return;
       
+      GameState.aliveCount = serverState.aliveCount;
+      GameState.matchState = serverState.matchState;
+      GameState.queueTimer = serverState.queueTimer;
+
       // Update our local representation of players
       Object.keys(serverState.players).forEach(id => {
-        if (id === this.socket.id) return; // Skip ourselves
+        if (id === this.socket.id) {
+          // Check if we were marked dead by the server
+          if (!serverState.players[id].isAlive && GameState.isAlive) {
+            GameState.isAlive = false;
+            // The local player died logic is handled in EnemyManager._triggerPlayerDeath()
+            // but we might want to ensure we sync this if the server kills us.
+          }
+          return;
+        }
         
         if (this.players[id]) {
           // Update target position/rotation for interpolation (Phase 2)
@@ -57,11 +69,23 @@ export class NetworkManager {
           this.players[id].targetRotation = serverState.players[id].rotation;
           this.players[id].isShooting = serverState.players[id].isShooting;
           this.players[id].isJumping = serverState.players[id].isJumping;
+          this.players[id].isAlive = serverState.players[id].isAlive;
         } else {
            // We might have missed the join event, add them
            this.addPlayer(serverState.players[id]);
         }
       });
+    });
+
+    this.socket.on('matchStateChanged', (data) => {
+      GameState.matchState = data.state;
+      GameState.queueTimer = data.timer;
+      if (data.state === 'PLAYING') {
+        GameState.isArenaActive = true;
+      } else if (data.state === 'WAITING' || data.state === 'STARTING') {
+        GameState.isArenaActive = false;
+      }
+      window.dispatchEvent(new CustomEvent('matchStateChanged', { detail: data }));
     });
   }
 
@@ -84,5 +108,15 @@ export class NetworkManager {
   static sendInput(inputData) {
     if (!this.isConnected) return;
     this.socket.emit('playerInput', inputData);
+  }
+
+  static notifyDeath() {
+    if (!this.isConnected) return;
+    this.socket.emit('playerDeath');
+  }
+
+  static notifyBotDeath() {
+    if (!this.isConnected) return;
+    this.socket.emit('botDeath');
   }
 }
