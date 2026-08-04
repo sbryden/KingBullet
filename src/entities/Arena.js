@@ -448,9 +448,60 @@ export const Arena = {
             if (Math.random() > 0.5) {
                 LootSystem.spawnChest(new THREE.Vector3(x, 10.5, z)); // Chest on top container
             }
+            
+            // Add steps to climb up
+            for (let step = 0; step < 4; step++) {
+                const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 1.5), new THREE.MeshStandardMaterial({ color: 0x555555 }));
+                const stepY = 1.5 + (step * 2.2); 
+                const shiftLong = -4 + (step * 2.5);
+                
+                let finalX = x;
+                let finalZ = z;
+                
+                if (container.rotation.y === 0) {
+                    finalX += 3.0; // stick out from side
+                    finalZ += shiftLong;
+                } else {
+                    finalZ += 3.0; // stick out from side
+                    finalX += shiftLong;
+                }
+                
+                stepMesh.position.set(finalX, stepY, finalZ);
+                stepMesh.castShadow = true;
+                stepMesh.receiveShadow = true;
+                scene.add(stepMesh);
+                this.collidables.push(stepMesh);
+                this.obstacles.push(stepMesh);
+            }
         } else if (Math.random() > 0.8) {
             LootSystem.spawnChest(new THREE.Vector3(x, 5.5, z)); // Chest on base container
+            
+            // Add steps to climb up to single container
+            for (let step = 0; step < 2; step++) {
+                const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 1.5), new THREE.MeshStandardMaterial({ color: 0x555555 }));
+                const stepY = 1.5 + (step * 2.2); 
+                const shiftLong = -2 + (step * 2.5);
+                
+                let finalX = x;
+                let finalZ = z;
+                
+                if (container.rotation.y === 0) {
+                    finalX += 3.0; 
+                    finalZ += shiftLong;
+                } else {
+                    finalZ += 3.0; 
+                    finalX += shiftLong;
+                }
+                
+                stepMesh.position.set(finalX, stepY, finalZ);
+                stepMesh.castShadow = true;
+                stepMesh.receiveShadow = true;
+                scene.add(stepMesh);
+                this.collidables.push(stepMesh);
+                this.obstacles.push(stepMesh);
+            }
         }
+
     }
     
     // A couple huge warehouses

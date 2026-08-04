@@ -311,5 +311,12 @@ export const Player = {
         }
       }
     }
+  },
+
+  applyRecoil(pitch, yaw) {
+    this.euler.x += pitch;
+    this.euler.y += yaw;
+    this.euler.x = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, this.euler.x));
+    Renderer.camera.quaternion.setFromEuler(this.euler);
   }
 };

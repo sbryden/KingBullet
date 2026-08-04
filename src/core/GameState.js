@@ -46,7 +46,7 @@ export const GameState = {
     },
     {
       id: 'cameron',
-      name: 'Cameron',
+      name: 'Nerd',
       category: 'street',
       price: 0, rarity: 'uncommon', shopSection: 'featured',
       skin: 0xffdcba, shirt: 0x3a7d44, pants: 0xc2a878, shoes: 0x4a4a4a, hair: 0xf5d442,

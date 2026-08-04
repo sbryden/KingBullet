@@ -287,11 +287,31 @@ export const EnemyFactory = {
         eye.add(pup);
         head.add(eye);
       });
-      // Two oversized buck teeth sticking out from the bottom of the face
+      // Open curved smile with two buck teeth 😃
+      const mouthMat = new THREE.MeshBasicMaterial({ color: 0x2a0a0a, side: THREE.DoubleSide });
+      // Half-circle mouth cavity (smile shape)
+      const mouthGeo = new THREE.CircleGeometry(0.10, 16, Math.PI, Math.PI);
+      const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+      mouth.position.set(0, -0.08, 0.18);
+      head.add(mouth);
+      // Smile lip outline (curved arc)
+      const lipMat = new THREE.MeshBasicMaterial({ color: 0xcc6666 });
+      const lipGeo = new THREE.TorusGeometry(0.10, 0.015, 6, 16, Math.PI);
+      const lip = new THREE.Mesh(lipGeo, lipMat);
+      lip.rotation.z = Math.PI; // flip so it curves down like a smile
+      lip.position.set(0, -0.08, 0.18);
+      head.add(lip);
+      // Tongue (pink, sits at the bottom curve of the smile)
+      const tongueMat = new THREE.MeshStandardMaterial({ color: 0xe87e7e, roughness: 0.8 });
+      const tongueGeo = new THREE.CircleGeometry(0.05, 8, Math.PI, Math.PI);
+      const tongue = new THREE.Mesh(tongueGeo, tongueMat);
+      tongue.position.set(0, -0.14, 0.17);
+      head.add(tongue);
+      // Two oversized buck teeth hanging from the top of the smile
       const toothMat = new THREE.MeshStandardMaterial({ color: 0xfcf8e8, roughness: 0.4, metalness: 0.05 });
-      const toothL = _box(0.06, 0.14, 0.06, -0.04, -0.20, 0.12, toothMat);
+      const toothL = _box(0.05, 0.10, 0.04, -0.035, -0.10, 0.17, toothMat);
       head.add(toothL);
-      const toothR = _box(0.06, 0.14, 0.06,  0.04, -0.20, 0.12, toothMat);
+      const toothR = _box(0.05, 0.10, 0.04,  0.035, -0.10, 0.17, toothMat);
       head.add(toothR);
       // Tiny freckles (small dots on cheeks)
       const freckleMat = new THREE.MeshBasicMaterial({ color: 0xc9956b });

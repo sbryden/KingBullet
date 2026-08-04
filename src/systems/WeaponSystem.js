@@ -7,6 +7,7 @@ import { WEAPON_RARITIES } from '../config/weapons.js';
 import { ARENA_SIZE } from '../config/constants.js';
 import { SoundManager } from '../core/SoundManager.js';
 import { ParticleSystem } from './ParticleSystem.js';
+import { Player } from '../entities/Player.js';
 
 export const WeaponSystem = {
   viewModel: null,
@@ -128,6 +129,11 @@ export const WeaponSystem = {
     const isHeavy = w.name === 'Shotgun' || w.name === 'Sniper' || w.name === 'Rocket Launcher';
     SoundManager.playShoot(isHeavy ? 0.7 : 1.0 + (Math.random() * 0.2 - 0.1), isHeavy);
     Renderer.shake(w.recoil * 0.8 || 0.1, 0.15);
+    
+    // Apply camera pitch/yaw recoil
+    const pitch = (w.recoil || 0.05);
+    const yaw = (Math.random() - 0.5) * pitch * 0.5;
+    Player.applyRecoil(pitch, yaw);
     
     const mf = document.getElementById('muzzle-flash');
     if (mf) {
@@ -311,20 +317,27 @@ export const WeaponSystem = {
   setScope(val) {
     if (this.isScoped === val) return;
     this.isScoped = val;
-    Renderer.camera.fov = this.isScoped ? 20 : 75;
+    const w = this.activeWeapon();
+    const targetFOV = this.isScoped ? (w && w.zoomFOV ? w.zoomFOV : 45) : 75;
+    Renderer.camera.fov = targetFOV;
     Renderer.camera.updateProjectionMatrix();
     if (this.viewModel) this.viewModel.visible = !this.isScoped;
     
     const scopeEl = document.getElementById('sniper-scope');
     const crosshairEl = document.getElementById('crosshair');
-    if (scopeEl) scopeEl.classList.toggle('hidden', !this.isScoped);
-    if (crosshairEl) crosshairEl.classList.toggle('hidden', this.isScoped);
+    
+    if (w && w.name === 'Sniper') {
+      if (scopeEl) scopeEl.classList.toggle('hidden', !this.isScoped);
+      if (crosshairEl) crosshairEl.classList.toggle('hidden', this.isScoped);
+    } else {
+      if (scopeEl) scopeEl.classList.add('hidden');
+      if (crosshairEl) crosshairEl.classList.remove('hidden');
+    }
   },
 
   toggleScope() {
     const w = this.activeWeapon();
-    // Only allow sniper to scope (can expand logic later)
-    if (w && w.name === 'Sniper' && !this.isReloading && !this.isSwitching) {
+    if (w && w.type === 'primary' && !this.isReloading && !this.isSwitching) {
       this.setScope(!this.isScoped);
     }
   },

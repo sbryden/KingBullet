@@ -74,7 +74,9 @@ export const EnemyManager = {
     const pos = new THREE.Vector3(x, PLAYER_HEIGHT + 10, z); // start high so raycaster drops them to ground
 
     const outfit = EnemyFactory.randomOutfit();
-    const weaponType = 'knife';
+    // ~60% of bots spawn with a real weapon so fights break out
+    const weaponPool = ['knife', 'knife', 'pistol', 'ak47', 'mp5', 'pistol', 'ak47', 'mp5', 'sniper', 'machinegun'];
+    const weaponType = weaponPool[Math.floor(Math.random() * weaponPool.length)];
     const name = EnemyFactory.randomName();
     
     const group = EnemyFactory.buildEnemy(outfit, weaponType, name);
@@ -195,9 +197,44 @@ export const EnemyManager = {
 
       // Detection
       if (e.state === STATE.IDLE) {
-        let foundWeapon = false;
+        // First: check for nearby enemies to fight
+        let foundTarget = false;
+        const hasGun = e.weaponType !== 'none' && e.weaponType !== 'knife' && e.weaponType !== 'bayonet';
+        // Guns detect at 100u, melee/knife bots still aggro within 15u
+        const detectionRange = hasGun ? 100 : 15;
         
-        if (e.weaponType === 'none' || e.weaponType === 'knife' || e.weaponType === 'bayonet') {
+        {
+          let closestDist = detectionRange;
+          let target = null;
+          
+          // Check player
+          const distToPlayer = e.group.position.distanceTo(playerPos);
+          if (distToPlayer < closestDist) {
+             closestDist = distToPlayer;
+             target = { pos: playerPos, type: 'player' };
+          }
+
+          // Check other bots
+          this.enemies.forEach(other => {
+            if (other !== e && other.state !== STATE.DEAD) {
+              const dist = e.group.position.distanceTo(other.group.position);
+              if (dist < closestDist) {
+                closestDist = dist;
+                target = { pos: other.group.position, type: 'bot', ref: other };
+              }
+            }
+          });
+
+          if (target) {
+            e.state = STATE.AGGRO;
+            e.targetEnemy = target;
+            e.aggroTimer = AGGRO_TIMEOUT;
+            foundTarget = true;
+          }
+        }
+        
+        // Second: if no enemy nearby, knife/unarmed bots search for weapons
+        if (!foundTarget && (e.weaponType === 'none' || e.weaponType === 'knife' || e.weaponType === 'bayonet')) {
           let closestDist = 60;
           let targetObj = null;
           let isChest = false;
@@ -227,36 +264,6 @@ export const EnemyManager = {
             e.state = STATE.SEARCH_WEAPON;
             e.targetWeapon = targetObj;
             e.targetIsChest = isChest;
-            foundWeapon = true;
-          }
-        }
-        
-        if (!foundWeapon && e.weaponType !== 'none') {
-          let closestDist = 100; // Detection range increased so they spot each other
-          let target = null;
-          
-          // Check player
-          const distToPlayer = e.group.position.distanceTo(playerPos);
-          if (distToPlayer < closestDist) {
-             closestDist = distToPlayer;
-             target = { pos: playerPos, type: 'player' };
-          }
-
-          // Check other bots
-          this.enemies.forEach(other => {
-            if (other !== e && other.state !== STATE.DEAD) {
-              const dist = e.group.position.distanceTo(other.group.position);
-              if (dist < closestDist) {
-                closestDist = dist;
-                target = { pos: other.group.position, type: 'bot', ref: other };
-              }
-            }
-          });
-
-          if (target) {
-            e.state = STATE.AGGRO;
-            e.targetEnemy = target;
-            e.aggroTimer = AGGRO_TIMEOUT;
           }
         }
       }
