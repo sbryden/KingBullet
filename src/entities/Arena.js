@@ -19,6 +19,7 @@ export const Arena = {
     this.buildCanyons(scene);
     this.buildUrbanZone(scene);
     this.buildIndustrialZone(scene);
+    this.buildStorm(scene);
     
     this.addParticles(scene);
   },
@@ -106,6 +107,32 @@ export const Arena = {
     water.rotation.x = -Math.PI / 2;
     water.position.y = -3; // Water level
     scene.add(water);
+  },
+
+  buildStorm(scene) {
+    const stormGeo = new THREE.CylinderGeometry(1, 1, 200, 32, 1, true);
+    const stormMat = new THREE.MeshStandardMaterial({
+      color: 0xaa22ff,
+      transparent: true,
+      opacity: 0.3,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.stormMesh = new THREE.Mesh(stormGeo, stormMat);
+    this.stormMesh.position.y = 100; // Half height
+    scene.add(this.stormMesh);
+  },
+
+  updateStorm(radius, x, z) {
+    if (!this.stormMesh) return;
+    if (radius <= 0) {
+      this.stormMesh.visible = false;
+      return;
+    }
+    this.stormMesh.visible = true;
+    this.stormMesh.scale.set(radius, 1, radius);
+    this.stormMesh.position.x = x;
+    this.stormMesh.position.z = z;
   },
 
   buildRodeoZone(scene) {

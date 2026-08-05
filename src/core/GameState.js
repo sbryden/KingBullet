@@ -14,6 +14,14 @@ export const GameState = {
   queueTimer: 0,
   aliveCount: 0,
   isAlive: true,
+  storm: { radius: 350, x: 0, z: 0 },
+
+  // ── Game Modes ──────────────────────────────────────────
+  gameMode: 'battle_royale', // 'battle_royale' | 'team_deathmatch' | 'gun_game'
+  team: null, // 'red' | 'blue' (TDM only)
+  teamScores: { red: 0, blue: 0 },
+  gunGameTier: 0,
+  gunGameTiers: ['pistol', 'tecdc9', 'mp5', 'ak47', 'machinegun', 'sniper', 'knife'],
 
   kb: 0,
   kbLifetime: 0,
@@ -143,6 +151,10 @@ export const GameState = {
     this.currentSlot = 'primary';
     this.isArenaActive = false;
     this.isAlive = true;
+    this.storm = { radius: 350, x: 0, z: 0 };
+    this.team = null;
+    this.teamScores = { red: 0, blue: 0 };
+    this.gunGameTier = 0;
   },
 
   activeWeapon() {

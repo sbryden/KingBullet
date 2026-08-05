@@ -13,6 +13,7 @@ import { OutfitFactory } from './systems/OutfitFactory.js';
 import { SoundManager }  from './core/SoundManager.js';
 import { ParticleSystem } from './systems/ParticleSystem.js';
 import { NetworkManager } from './core/NetworkManager.js';
+import { WEAPONS } from './config/weapons.js';
 
 let isSystemsInitialized = false;
 let currentCategory = 'all';
@@ -105,6 +106,9 @@ function setupLobbyUI() {
   });
 
   buildOutfitsUI();
+
+  // Mode selection cards
+  setupModeSelection();
 }
 
 function updateKBDisplay() {
@@ -327,6 +331,22 @@ document.getElementById('nav-deploy-btn').addEventListener('click', () => {
   document.getElementById('hud').classList.add('visible');
   InputManager.requestPointerLock();
   
+  // Gun Game: set initial weapon
+  if (GameState.gameMode === 'gun_game') {
+    const tier0 = GameState.gunGameTiers[0];
+    const wepDef = WEAPONS[tier0];
+    if (wepDef) {
+      const slot = wepDef.type === 'melee' ? 'melee' : (wepDef.type === 'secondary' ? 'secondary' : 'primary');
+      GameState.loadout[slot] = tier0;
+      GameState.initAmmo();
+      WeaponSystem.switchWeapon(slot, true);
+      WeaponSystem.createPlayerViewModel();
+      WeaponSystem.updateAmmoDisplay();
+      WeaponSystem.updateWeaponInfo();
+      WeaponSystem.updateSlotIndicators();
+    }
+  }
+  
   GameLoop.start();
 });
 
@@ -388,6 +408,7 @@ window.addEventListener('matchStateChanged', (e) => {
       const vScore = document.getElementById('victory-score');
       const vKills = document.getElementById('victory-kills');
       const vKb = document.getElementById('victory-kb');
+      const vSub = document.getElementById('victory-sub');
       
       const bonusKB = Math.floor(GameState.score / 5) + 100; // Extra win bonus
       GameState.earnKB(bonusKB);
@@ -395,9 +416,61 @@ window.addEventListener('matchStateChanged', (e) => {
       if (vScore) vScore.textContent = GameState.score;
       if (vKills) vKills.textContent = GameState.kills;
       if (vKb) vKb.textContent = "+" + GameState.kbEarnedThisRound;
+      
+      // Mode-specific victory text
+      if (vSub) {
+        if (GameState.gameMode === 'team_deathmatch') {
+          const won = GameState.teamScores.red >= 50 ? 'RED' : 'BLUE';
+          vSub.textContent = `Team ${won} wins!`;
+        } else if (GameState.gameMode === 'gun_game') {
+          vSub.textContent = 'You completed all weapon tiers!';
+        } else {
+          vSub.textContent = 'You are the last one standing.';
+        }
+      }
     }
   } else if (data.state === 'WAITING' || data.state === 'STARTING') {
     // Cleanup any lingering bots
     EnemyManager.reset();
   }
 });
+
+// ── Gun Game weapon advancement ─────────────────────────
+window.addEventListener('gunGameAdvance', (e) => {
+  const data = e.detail;
+  GameState.gunGameTier = data.tier;
+  const weaponId = GameState.gunGameTiers[data.tier];
+  if (!weaponId) return;
+  
+  const wepDef = WEAPONS[weaponId];
+  if (!wepDef) return;
+  
+  const slot = wepDef.type === 'melee' ? 'melee' : (wepDef.type === 'secondary' ? 'secondary' : 'primary');
+  GameState.loadout[slot] = weaponId;
+  GameState.initAmmo();
+  WeaponSystem.switchWeapon(slot, true);
+  WeaponSystem.createPlayerViewModel();
+  WeaponSystem.updateAmmoDisplay();
+  WeaponSystem.updateWeaponInfo();
+  WeaponSystem.updateSlotIndicators();
+  
+  // Flash the gun game HUD
+  const ggHud = document.getElementById('gun-game-hud');
+  if (ggHud) {
+    ggHud.classList.add('advance');
+    setTimeout(() => ggHud.classList.remove('advance'), 600);
+  }
+});
+
+// ── Mode Selection ─────────────────────────────────────────
+function setupModeSelection() {
+  document.querySelectorAll('.mode-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      const mode = card.dataset.mode;
+      GameState.gameMode = mode;
+      NetworkManager.selectMode(mode);
+    });
+  });
+}

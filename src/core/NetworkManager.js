@@ -21,7 +21,8 @@ export class NetworkManager {
         position: Player.position ? { x: Player.position.x, y: Player.position.y, z: Player.position.z } : { x: 0, y: 0, z: 0 },
         rotation: Player.euler ? Player.euler.y : 0,
         outfitIndex: GameState.outfitIndex,
-        weapon: GameState.equippedWeapon || 'pistol'
+        weapon: GameState.equippedWeapon || 'pistol',
+        gameMode: GameState.gameMode
       });
     });
 
@@ -50,6 +51,9 @@ export class NetworkManager {
       GameState.aliveCount = serverState.aliveCount;
       GameState.matchState = serverState.matchState;
       GameState.queueTimer = serverState.queueTimer;
+      if (serverState.storm) GameState.storm = serverState.storm;
+      if (serverState.gameMode) GameState.gameMode = serverState.gameMode;
+      if (serverState.teamScores) GameState.teamScores = serverState.teamScores;
 
       // Update our local representation of players
       Object.keys(serverState.players).forEach(id => {
@@ -87,6 +91,26 @@ export class NetworkManager {
       }
       window.dispatchEvent(new CustomEvent('matchStateChanged', { detail: data }));
     });
+
+    // Game mode events
+    this.socket.on('teamAssignment', (data) => {
+      GameState.team = data.team;
+      window.dispatchEvent(new CustomEvent('teamAssignment', { detail: data }));
+    });
+
+    this.socket.on('modeScoreUpdate', (data) => {
+      if (data.teamScores) GameState.teamScores = data.teamScores;
+      window.dispatchEvent(new CustomEvent('modeScoreUpdate', { detail: data }));
+    });
+
+    this.socket.on('gunGameAdvance', (data) => {
+      GameState.gunGameTier = data.tier;
+      window.dispatchEvent(new CustomEvent('gunGameAdvance', { detail: data }));
+    });
+
+    this.socket.on('respawn', (data) => {
+      window.dispatchEvent(new CustomEvent('playerRespawn', { detail: data }));
+    });
   }
 
   static addPlayer(playerData) {
@@ -118,5 +142,15 @@ export class NetworkManager {
   static notifyBotDeath() {
     if (!this.isConnected) return;
     this.socket.emit('botDeath');
+  }
+
+  static selectMode(mode) {
+    if (!this.isConnected) return;
+    this.socket.emit('selectMode', mode);
+  }
+
+  static notifyKill(data) {
+    if (!this.isConnected) return;
+    this.socket.emit('playerKill', data);
   }
 }

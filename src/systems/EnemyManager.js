@@ -133,6 +133,21 @@ export const EnemyManager = {
         return;
       }
 
+      // Apply storm damage (Battle Royale only)
+      if (GameState.gameMode === 'battle_royale' && GameState.isArenaActive && GameState.storm) {
+        const dx = e.group.position.x - GameState.storm.x;
+        const dz = e.group.position.z - GameState.storm.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > GameState.storm.radius) {
+          e.health -= 15 * delta;
+          if (e.health <= 0) {
+            e.health = 0;
+            this._killEnemy(e, e.group.position);
+            return;
+          }
+        }
+      }
+
       // Apply gravity & raycast to ground
       e.velocityY -= 20 * delta; // GRAVITY
       e.group.position.y += e.velocityY * delta;
@@ -631,6 +646,7 @@ export const EnemyManager = {
     SoundManager.playExplosion();
 
     NetworkManager.notifyBotDeath();
+    NetworkManager.notifyKill({ team: GameState.team });
 
     // Death collapse animation
     let p = 0;
@@ -681,6 +697,28 @@ export const EnemyManager = {
     GameState.isAlive = false;
     NetworkManager.notifyDeath();
 
+    // In TDM/Gun Game, show respawn countdown instead of death screen
+    if (GameState.gameMode === 'team_deathmatch' || GameState.gameMode === 'gun_game') {
+      const countdown = document.getElementById('respawn-countdown');
+      const timerEl = document.getElementById('respawn-timer');
+      if (countdown) countdown.classList.remove('hidden');
+      
+      let remaining = 3;
+      if (timerEl) timerEl.textContent = remaining;
+      
+      const interval = setInterval(() => {
+        remaining--;
+        if (timerEl) timerEl.textContent = remaining;
+        if (remaining <= 0) {
+          clearInterval(interval);
+          if (countdown) countdown.classList.add('hidden');
+          this.respawnPlayer();
+        }
+      }, 1000);
+      return;
+    }
+
+    // Battle Royale: show death screen
     const scoreEl = document.getElementById('death-score');
     const killsEl = document.getElementById('death-kills');
     const kbEl = document.getElementById('death-kb');
@@ -695,6 +733,22 @@ export const EnemyManager = {
     const ds = document.getElementById('death-screen');
     if (ds) ds.classList.remove('hidden');
     document.exitPointerLock();
+  },
+
+  respawnPlayer() {
+    GameState.isAlive = true;
+    this.playerHealth = this.playerMaxHealth;
+    this._updateHealthHUD();
+    
+    // Random respawn position
+    const half = ARENA_SIZE / 2 - 20;
+    Player.position.x = (Math.random() - 0.5) * half * 1.5;
+    Player.position.z = (Math.random() - 0.5) * half * 1.5;
+    Player.position.y = PLAYER_HEIGHT + 10;
+    Player.velocityY = 0;
+    
+    // Sync camera (Renderer is already imported at the top of the file)
+    Renderer.camera.position.copy(Player.position);
   },
 
   // ── HUD helpers ─────────────────────────────────────────

@@ -38,6 +38,28 @@
     </div>
   </div>
 
+  <!-- Mode Selection -->
+  <div id="mode-selection">
+    <div class="mode-card active" data-mode="battle_royale">
+      <div class="mode-icon">👑</div>
+      <div class="mode-name">BATTLE ROYALE</div>
+      <div class="mode-desc">30 players, last one standing wins. Storm closes in.</div>
+      <div class="mode-players">30 Players</div>
+    </div>
+    <div class="mode-card" data-mode="team_deathmatch">
+      <div class="mode-icon">⚔️</div>
+      <div class="mode-name">TEAM DEATHMATCH</div>
+      <div class="mode-desc">Red vs Blue. First team to 50 kills wins. Respawn on death.</div>
+      <div class="mode-players">20 Players</div>
+    </div>
+    <div class="mode-card" data-mode="gun_game">
+      <div class="mode-icon">🔫</div>
+      <div class="mode-name">GUN GAME</div>
+      <div class="mode-desc">Cycle through every weapon. Get a kill to advance. Knife kill wins!</div>
+      <div class="mode-players">15 Players</div>
+    </div>
+  </div>
+
   <!-- Shop & Inventory Panel (Outfit Selection) -->
   <div id="outfits-panel" class="lobby-panel active">
     
@@ -121,6 +143,26 @@
     <div class="stat"><span class="stat-label">Time</span><span class="stat-value" id="timer-val">0:00</span></div>
   </div>
 
+  <!-- TDM Team Scores -->
+  <div id="tdm-scores" class="hidden">
+    <div class="tdm-team red"><span class="tdm-label">RED</span><span id="tdm-red-score" class="tdm-score">0</span></div>
+    <div class="tdm-divider">VS</div>
+    <div class="tdm-team blue"><span class="tdm-label">BLUE</span><span id="tdm-blue-score" class="tdm-score">0</span></div>
+  </div>
+
+  <!-- Gun Game Tier -->
+  <div id="gun-game-hud" class="hidden">
+    <div class="gg-label">WEAPON TIER</div>
+    <div id="gg-weapon-name" class="gg-weapon">PISTOL</div>
+    <div id="gg-tier-progress" class="gg-progress"><span id="gg-tier-current">1</span> / <span id="gg-tier-total">7</span></div>
+  </div>
+
+  <!-- Respawn Countdown -->
+  <div id="respawn-countdown" class="hidden">
+    <div class="respawn-text">RESPAWNING IN</div>
+    <div id="respawn-timer" class="respawn-timer">3</div>
+  </div>
+
   <div id="bottom-bar">
     <div class="bottom-panel">
       <span id="health-label">100</span>
@@ -153,7 +195,7 @@
 <div id="death-screen" class="hidden">
   <div class="death-container">
     <h1 class="death-title">YOU DIED</h1>
-    <p class="death-sub">The enemy got you.</p>
+    <p class="death-sub" id="death-sub">The enemy got you.</p>
     <div class="death-stats">
       <div class="ds-row"><span>Score</span><span id="death-score">0</span></div>
       <div class="ds-row"><span>Kills</span><span id="death-kills">0</span></div>
@@ -167,7 +209,7 @@
 <div id="victory-screen" class="hidden">
   <div class="death-container victory-container">
     <h1 class="death-title" style="color: #00e5ff; text-shadow: 0 0 20px rgba(0,229,255,0.5);">VICTORY ROYALE</h1>
-    <p class="death-sub">You are the last one standing.</p>
+    <p class="death-sub" id="victory-sub">You are the last one standing.</p>
     <div class="death-stats">
       <div class="ds-row"><span>Score</span><span id="victory-score">0</span></div>
       <div class="ds-row"><span>Kills</span><span id="victory-kills">0</span></div>

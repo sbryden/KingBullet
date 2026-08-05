@@ -10,12 +10,14 @@ import { GameState } from './GameState.js';
 import { ARENA_SIZE } from '../config/constants.js';
 import { WEAPONS } from '../config/weapons.js';
 import { LootSystem } from '../systems/LootSystem.js';
+import { Arena } from '../entities/Arena.js';
 import { NetworkPlayerManager } from '../systems/NetworkPlayerManager.js';
 import { NetworkManager } from './NetworkManager.js';
 export const GameLoop = {
   timer: new THREE.Timer(),
   interactionRaycaster: new THREE.Raycaster(),
   currentInteractable: null,
+  stormDamageTimer: 0,
 
   start() {
     this.animate();
@@ -46,6 +48,26 @@ export const GameLoop = {
     if (GameState.isArenaActive) {
       GameState.gameTime += delta;
       this.updateTimer();
+      
+      // Storm only in Battle Royale
+      if (GameState.gameMode === 'battle_royale') {
+        Arena.updateStorm(GameState.storm.radius, GameState.storm.x, GameState.storm.z);
+        
+        if (GameState.isAlive) {
+          const dx = Player.position.x - GameState.storm.x;
+          const dz = Player.position.z - GameState.storm.z;
+          const dist = Math.hypot(dx, dz);
+          if (dist > GameState.storm.radius) {
+            this.stormDamageTimer += delta;
+            if (this.stormDamageTimer >= 1.0) {
+              EnemyManager._damagePlayer(15);
+              this.stormDamageTimer = 0;
+            }
+          } else {
+            this.stormDamageTimer = 0;
+          }
+        }
+      }
     }
 
     this.updateInteraction();
@@ -110,7 +132,41 @@ export const GameLoop = {
     if (el) el.textContent = m + ':' + String(s).padStart(2, '0');
 
     const aliveEl = document.getElementById('alive-val');
-    if (aliveEl) aliveEl.textContent = GameState.aliveCount + "/30";
+    if (aliveEl) {
+      if (GameState.gameMode === 'battle_royale') {
+        aliveEl.textContent = GameState.aliveCount + "/30";
+      } else if (GameState.gameMode === 'team_deathmatch') {
+        aliveEl.textContent = GameState.aliveCount;
+      } else if (GameState.gameMode === 'gun_game') {
+        aliveEl.textContent = GameState.aliveCount;
+      }
+    }
+
+    // Update mode-specific HUD
+    const tdmScores = document.getElementById('tdm-scores');
+    const ggHud = document.getElementById('gun-game-hud');
+    
+    if (GameState.gameMode === 'team_deathmatch' && GameState.isArenaActive) {
+      if (tdmScores) tdmScores.classList.remove('hidden');
+      if (ggHud) ggHud.classList.add('hidden');
+      const redScore = document.getElementById('tdm-red-score');
+      const blueScore = document.getElementById('tdm-blue-score');
+      if (redScore) redScore.textContent = GameState.teamScores.red;
+      if (blueScore) blueScore.textContent = GameState.teamScores.blue;
+    } else if (GameState.gameMode === 'gun_game' && GameState.isArenaActive) {
+      if (ggHud) ggHud.classList.remove('hidden');
+      if (tdmScores) tdmScores.classList.add('hidden');
+      const weaponName = document.getElementById('gg-weapon-name');
+      const tierCurrent = document.getElementById('gg-tier-current');
+      const tierTotal = document.getElementById('gg-tier-total');
+      const currentWeapon = GameState.gunGameTiers[GameState.gunGameTier];
+      if (weaponName) weaponName.textContent = currentWeapon ? currentWeapon.toUpperCase() : 'DONE';
+      if (tierCurrent) tierCurrent.textContent = GameState.gunGameTier + 1;
+      if (tierTotal) tierTotal.textContent = GameState.gunGameTiers.length;
+    } else {
+      if (tdmScores) tdmScores.classList.add('hidden');
+      if (ggHud) ggHud.classList.add('hidden');
+    }
 
     // Match status
     const statusEl = document.getElementById('match-status');
